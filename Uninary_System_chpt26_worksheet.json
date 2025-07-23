@@ -1,0 +1,354 @@
+{
+  "Quiz Questions": [
+    {
+      "Question No.": "Question 1",
+      "Question": "What is the blood vessel that carries blood away from the glomerulus called?",
+      "Answer": "The blood vessel that carries blood away from the glomerulus is called the efferent arteriole.",
+      "Context": "Figure 26.5  The Blood Supply to the Kidneys\nDescription: The image is a diagram of blood flow in the kidney, composed of two parts. Panel (c) illustrates the path of blood through renal arteries and veins. Panel (d) provides a close-up view of a nephron, highlighting the flow through the glomerulus, efferent arteriole, peritubular capillaries, and venules.\nSympathetic control\nFigure 26.5c, d",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 2",
+      "Question": "Which substance's concentration remains relatively constant throughout the nephron, as shown in the graph?",
+      "Answer": "Creatinine's percentage remaining in the filtrate stays almost constant throughout the nephron's different segments, starting near 100% and remaining there.",
+      "Context": "Figure 26.16  A Summary of Renal Function\nDescription: The image is a diagram that illustrates the function of a nephron within the kidney, accompanied by a graph. The diagram showcases the nephron's key functional areas and the graph tracks the percentage of various substances like water, glucose, ions, and urea remaining in the filtrate as it moves through the nephron.\nFigure 26.16b",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 3",
+      "Question": "What is the key difference in permeability between the thin descending limb and the papillary duct, as shown in the image, regarding urea?",
+      "Answer": "The thin descending limb is impermeable to urea, while the papillary duct is permeable to urea.",
+      "Context": "Figure 26.13  Countercurrent Multiplication and Concentration of Urine\nDescription: The image diagrams the countercurrent mechanism within the nephron, showcasing the loop of Henle and collecting duct's role in concentrating urine. It illustrates the movement of water and the concentration of solutes, with the thin descending limb permeable to water and the DCT and collecting duct exhibiting variable water permeability. The diagram also highlights urea's permeability in the papillary duct.\nFigure 26.13c",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 4",
+      "Question": "What are the two main types of nephrons shown in the image?",
+      "Answer": "The two main types of nephrons shown in the image are the cortical nephron and the juxtamedullary nephron.",
+      "Context": "Figure 26.7  Cortical and Juxtamedullary Nephrons\nDescription: The diagram illustrates the structure of a kidney, differentiating between cortical and juxtamedullary nephrons within the cortex and medulla. It labels key components like collecting ducts, renal papilla with papillary ducts, and the minor calyx, showing the overall kidney structure and urine flow path. The image identifies the functional units of the kidney, including their components.\nFigure 26.7a",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 5",
+      "Question": "What is one waste product that is secreted during tubular secretion?",
+      "Answer": "One waste product secreted during tubular secretion is creatinine.",
+      "Context": "Description: The image is a table that categorizes substances based on tubular reabsorption and secretion within the kidneys. It details substances that are reabsorbed, secreted, or have no transport mechanism, including ions, metabolites, and wastes. The table visually summarizes the kidney's role in managing various substances.\nDescription: The image is a diagram of a nephron, the kidney's functional unit, illustrating reabsorption and secretion. It uses arrows to show the movement of substances like glucose (reabsorbed) and urea (secreted). Text boxes highlight which substances are moved at various stages of the nephron.\nRenalFunction",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 6",
+      "Question": "Trace the flow of blood through a nephron, according to this image.",
+      "Answer": "Blood enters a nephron via an afferent arteriole, flows through the glomerulus, exits via the efferent arteriole, and then enters peritubular capillaries before flowing into venules.",
+      "Context": "Figure 26.5  The Blood Supply to the Kidneys\nDescription: The image is a diagram of blood flow in the kidney, composed of two parts. Panel (c) illustrates the path of blood through renal arteries and veins. Panel (d) provides a close-up view of a nephron, highlighting the flow through the glomerulus, efferent arteriole, peritubular capillaries, and venules.\nSympathetic control\nFigure 26.5c, d",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 7",
+      "Question": "How does the presence of ADH affect the volume and concentration of urine?",
+      "Answer": "When ADH is present, the urine is a small volume and concentrated. Conversely, when ADH is absent, the urine is a large volume and dilute.",
+      "Context": "Figure 26.15  The Effects of ADH on the DCT and Collecting Ducts\nDescription: The image illustrates the function of the kidney's collecting duct, comparing scenarios with and without antidiuretic hormone (ADH). In the absence of ADH, water remains in the collecting duct, resulting in a large volume of dilute urine. When ADH is present, water reabsorption increases, leading to a small volume of concentrated urine.\nFigure 26.15a, b",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 8",
+      "Question": "How does the presence of ADH affect the volume and concentration of urine?",
+      "Answer": "In the presence of ADH, the collecting duct reabsorbs more water, leading to a smaller volume of concentrated urine.  In the absence of ADH, less water is reabsorbed and a larger volume of dilute urine is produced.",
+      "Context": "Figure 26.15  The Effects of ADH on the DCT and Collecting Ducts\nDescription: The image illustrates the function of the kidney's collecting duct, comparing scenarios with and without antidiuretic hormone (ADH). In the absence of ADH, water remains in the collecting duct, resulting in a large volume of dilute urine. When ADH is present, water reabsorption increases, leading to a small volume of concentrated urine.\nFigure 26.15a, b",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 9",
+      "Question": "What part of the nephron is directly connected to the Bowman's capsule?",
+      "Answer": "The proximal convoluted tubule is directly connected to the Bowman's capsule.",
+      "Context": "Figure 26.10  Glomerular Filtration\nDescription: The image is a diagram of a nephron, the functional unit of the kidney, detailing the process of urine formation. Labeled parts include the glomerulus, Bowman's capsule, proximal and distal convoluted tubules, loop of Henle, and collecting duct, with arrows indicating the movement of fluids and substances. The diagram illustrates reabsorption, secretion, and ends with urine storage and elimination.\nFigure 26.10",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 10",
+      "Question": "In the nephron, what is the order of blood flow through the glomerular capillaries, efferent arteriole, peritubular capillaries, and venules?",
+      "Answer": "Blood flows from the afferent arteriole into the glomerulus, then through the efferent arteriole, into the peritubular capillaries, and finally into the venules.",
+      "Context": "Figure 26.5  The Blood Supply to the Kidneys\nDescription: The image is a diagram of blood flow in the kidney, composed of two parts. Panel (c) illustrates the path of blood through renal arteries and veins. Panel (d) provides a close-up view of a nephron, highlighting the flow through the glomerulus, efferent arteriole, peritubular capillaries, and venules.\nSympathetic control\nFigure 26.5c, d",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 11",
+      "Question": "What is the final result of the feedback loop depicted in this diagram?",
+      "Answer": "The final result of the feedback loop is the elevation of blood pressure and blood volume, which restores homeostasis.",
+      "Context": "Figure 26.11  The Response to a Reduction in the GFR\nDescription: The image is a cyclical diagram showing a feedback loop that regulates blood pressure and volume. It starts with homeostasis being disturbed, leading to decreased GFR, which then triggers renin release and angiotensin activation. Ultimately, there is an elevation of blood pressure and blood volume, restoring homeostasis and increasing GFR.\nFigure 26.11a",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 12",
+      "Question": "What is the name of the structure that surrounds the glomerulus in the renal corpuscle?",
+      "Answer": "The structure that surrounds the glomerulus is the Bowman's capsule. This capsule helps to collect the fluid filtered from the blood.",
+      "Context": "Figure 26.8  The Renal Corpuscle\nDescription: The image is a detailed diagram of a nephron, showing the glomerulus within Bowman's capsule, the afferent and efferent arterioles, proximal and distal convoluted tubules, and the juxtaglomerular apparatus.  The diagram includes a close-up view of the glomerulus and highlights the capillaries, visceral and parietal epithelium. The macula densa is also labeled.\nFigure 26.8a, b",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 13",
+      "Question": "What is the flow of blood vessels immediately before and after the nephrons in the kidney?",
+      "Answer": "The afferent arterioles supply blood to the nephrons, and the venules receive blood from the nephrons.",
+      "Context": "Figure 26.5  The Blood Supply to the Kidneys\nDescription: The image is a diagram of blood flow in the kidney, composed of two parts. Panel (c) illustrates the path of blood through renal arteries and veins. Panel (d) provides a close-up view of a nephron, highlighting the flow through the glomerulus, efferent arteriole, peritubular capillaries, and venules.\nSympathetic control\nFigure 26.5c, d",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 14",
+      "Question": "Based on the graph, how does the presence or absence of ADH (Antidiuretic Hormone) impact water reabsorption in the collecting duct?",
+      "Answer": "In the collecting duct, water reabsorption is significantly affected by ADH.  In the presence of ADH, a greater percentage of water is reabsorbed back into the body, as shown by the lower dashed blue line on the graph.",
+      "Context": "Figure 26.16  A Summary of Renal Function\nDescription: The image is a diagram that illustrates the function of a nephron within the kidney, accompanied by a graph. The diagram showcases the nephron's key functional areas and the graph tracks the percentage of various substances like water, glucose, ions, and urea remaining in the filtrate as it moves through the nephron.\nFigure 26.16b",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": NaN,
+      "Question": "What is the primary function of the black and white pattern in this image?",
+      "Answer": "The black and white pattern is a QR code.  It is designed to be scanned and contain encoded information.",
+      "Context": "Just regular attendance quiz\u2026.",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 16",
+      "Question": "What is the general direction of movement, as shown by the arrows, of filtrate through the nephron, starting from the Bowman's capsule and ending at urine storage and elimination?",
+      "Answer": "The filtrate moves from the Bowman's capsule through the proximal convoluted tubule, the loop of Henle, the distal convoluted tubule, the collecting duct, and finally to urine storage and elimination. The arrows indicate a continuous flow from the beginning to the end of the nephron.",
+      "Context": "Figure 26.15  The Effects of ADH on the DCT and Collecting Ducts\nDescription: The image is a diagram of a nephron, the functional unit of a kidney, illustrating the process of urine formation. It highlights key components such as the glomerulus, proximal and distal convoluted tubules, the loop of Henle, and the collecting duct. Arrows with different colors indicate the movement of water, solutes, and filtrate through the nephron, culminating in urine storage and elimination.\nKnow what the direction and color of these arrows means!!\nFigure 26.15",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 17",
+      "Question": "What role do stretch receptors play in the micturition reflex?",
+      "Answer": "Stretch receptors in the bladder send signals to the brain via the spinal cord and afferent nerves, which trigger the reflex that results in urination.",
+      "Context": "Figure 26.21  The Micturition Reflex\nDescription: This diagram illustrates the micturition reflex, the neural pathways that control urination, detailing the sensory and motor pathways involved. It shows the brain, spinal cord, and bladder, labeling components like the thalamus, interneurons, and pelvic nerves, and tracing the pathways triggered by stretch receptors in the bladder that lead to detrusor muscle contraction. The process involves afferent signals and efferent pathways that result in the sensation of needing to urinate.\ncontinence//\nincontinence\nFigure 26.21",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 18",
+      "Question": "What is the key structural difference between the cortical and juxtamedullary nephrons?",
+      "Answer": "The juxtamedullary nephron has a longer Loop of Henle and associated vasa recta compared to the cortical nephron.",
+      "Context": "Figure 26.7  Cortical and Juxtamedullary Nephrons\nDescription: The image is a labeled diagram comparing two types of nephrons: cortical and juxtamedullary. It shows the structure of each nephron, including the glomerulus, proximal and distal convoluted tubules, Loop of Henle, collecting duct, and associated blood vessels. The juxtamedullary nephron has a longer loop of Henle and vasa recta compared to the cortical nephron.\nFigure 26.7b, c",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 19",
+      "Question": "Based on the arrows, what is happening in the distal convoluted tubule?",
+      "Answer": "The distal convoluted tubule has both absorption (blue arrows) and secretion (orange arrow). Absorption moves substances back into the blood while secretion moves them into the forming urine.",
+      "Context": "Figure 26.15  The Effects of ADH on the DCT and Collecting Ducts\nDescription: The image is a diagram of a nephron, the functional unit of a kidney, illustrating the process of urine formation. It highlights key components such as the glomerulus, proximal and distal convoluted tubules, the loop of Henle, and the collecting duct. Arrows with different colors indicate the movement of water, solutes, and filtrate through the nephron, culminating in urine storage and elimination.\nKnow what the direction and color of these arrows means!!\nFigure 26.15",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 20",
+      "Question": "What are the two ligaments associated with the urinary bladder?",
+      "Answer": "The two ligaments associated with the urinary bladder are the lateral and middle umbilical ligaments.",
+      "Context": "Figure 26.19  Organs for the Collection and storage of Urine\nDescription: The image is a labeled anatomical diagram of the human urinary bladder and surrounding structures. The diagram highlights the bladder's internal features like rugae, ureteral openings, and the center of the trigone, as well as external features including the ureters, prostate gland, and urethral sphincters. The prostatic and membranous urethra are also indicated.\nFigure 26.19c",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 21",
+      "Question": "What is the function of the glomerulus, as suggested by the image?",
+      "Answer": "The glomerulus is a network of capillaries surrounded by the Bowman's capsule, and the image suggests its function is to filter blood within the nephron.",
+      "Context": "Figure 26.8  The Renal Corpuscle\nDescription: The image is a detailed diagram of a nephron, showing the glomerulus within Bowman's capsule, the afferent and efferent arterioles, proximal and distal convoluted tubules, and the juxtaglomerular apparatus.  The diagram includes a close-up view of the glomerulus and highlights the capillaries, visceral and parietal epithelium. The macula densa is also labeled.\nFigure 26.8a, b",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 22",
+      "Question": "What are the two main blood vessels associated with the glomerulus, and what is their function?",
+      "Answer": "The two main blood vessels associated with the glomerulus are the afferent arteriole, which brings blood into the glomerulus, and the efferent arteriole, which carries blood away.",
+      "Context": "Glomerulus anatomy\nDescription: The image presents a detailed anatomical diagram of a nephron, the kidney's functional unit, showing both microscopic and macroscopic views. Key labeled structures include the glomerulus within Bowman's capsule, afferent and efferent arterioles, the proximal and distal convoluted tubules, and the juxtaglomerular apparatus. The microscopic view (a) emphasizes the capillaries within the glomerulus and the podocytes, which are the visceral epithelium.\nPodocytes cover lamina densa of capillaries\nProject into the capsular space\nPedicels of podocytes separated by filtration slits",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 23",
+      "Question": "What is the primary difference in permeability between the thin descending limb and the distal convoluted tubule (DCT) in relation to water and urea?",
+      "Answer": "The thin descending limb is permeable to water but impermeable to urea. The DCT, along with the collecting duct, has variable permeability to water and is also impermeable to urea.",
+      "Context": "Figure 26.13  Countercurrent Multiplication and Concentration of Urine\nDescription: The image diagrams the countercurrent mechanism within the nephron, showcasing the loop of Henle and collecting duct's role in concentrating urine. It illustrates the movement of water and the concentration of solutes, with the thin descending limb permeable to water and the DCT and collecting duct exhibiting variable water permeability. The diagram also highlights urea's permeability in the papillary duct.\nFigure 26.13c",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 24",
+      "Question": "What is the main function of the thin descending limb in terms of permeability?",
+      "Answer": "The thin descending limb is permeable to water but impermeable to urea, as indicated by the image.",
+      "Context": "Figure 26.13  Countercurrent Multiplication and Concentration of Urine\nDescription: The image diagrams the countercurrent mechanism within the nephron, showcasing the loop of Henle and collecting duct's role in concentrating urine. It illustrates the movement of water and the concentration of solutes, with the thin descending limb permeable to water and the DCT and collecting duct exhibiting variable water permeability. The diagram also highlights urea's permeability in the papillary duct.\nFigure 26.13c",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 25",
+      "Question": "What happens to the percentage of glucose, amino acids, and proteins remaining in the filtrate as it passes through the PCT?",
+      "Answer": "The percentage of glucose, amino acids, and proteins remaining in the filtrate decreases significantly as it moves through the PCT (proximal convoluted tubule).",
+      "Context": "Figure 26.16  A Summary of Renal Function\nDescription: The image is a diagram that illustrates the function of a nephron within the kidney, accompanied by a graph. The diagram showcases the nephron's key functional areas and the graph tracks the percentage of various substances like water, glucose, ions, and urea remaining in the filtrate as it moves through the nephron.\nFigure 26.16b",
+      "Image/Type": "Image (see embedded)"
+    },
+    {
+      "Question No.": "Question 26",
+      "Question": "Briefly describe the key function of the nephron, as illustrated in the diagram.",
+      "Answer": "The diagram illustrates the nephron's function in urine formation, which involves filtering blood, reabsorbing essential substances, and secreting waste products to regulate fluid balance and concentration.",
+      "Context": "Figure 26.16  A Summary of Renal Function\nDescription: The diagram illustrates the nephron's function in urine formation, showing the movement of filtrate through the glomerulus, PCT, loop of Henle, and DCT. It visually represents reabsorption, secretion, and the influence of aldosterone and ADH in regulating permeability and urine concentration, with arrows indicating fluid flow and the transport of substances. The diagram is labeled with different steps to explain the function of each part of the nephron.\nFigure 26.16a",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 27",
+      "Question": "What is the primary function of the proximal convoluted tubule (PCT)?",
+      "Answer": "The primary function of the PCT is to actively reabsorb nutrients, plasma proteins, and ions from the filtrate and release them into the peritubular fluid.",
+      "Context": "Functional anatomy of the nephron\nProximal convoluted tubule (PCT)\nActively reabsorbs nutrients, plasma proteins and ions from filtrate\nReleased into peritubular fluid\nLoop of Henle\nDescending limb\nAscending limb\nEach limb has a thick and thin section",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 28",
+      "Question": "Briefly describe the process of reabsorption in urine formation.",
+      "Answer": "Reabsorption is the process where water and solutes are removed from the filtrate.",
+      "Context": "Basic processes of urine formation\nFiltration\nBlood pressure \nWater and solutes across glomerular capillaries \nReabsorption\nThe removal of water and solutes from the filtrate\nSecretion\nTransport of solutes from the peritubular fluid into the tubular fluid",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 29",
+      "Question": "What is the role of Tm in the reabsorption process within the kidney?",
+      "Answer": "Tm determines the renal threshold, which is the maximum amount of a substance that can be reabsorbed from the tubular fluid.",
+      "Context": "Reabsorption and secretion\nAccomplished via diffusion, osmosis, and carrier-mediated transport\nTm determines renal threshold for reabsorption of substances in tubular fluid",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 30",
+      "Question": "What structural difference distinguishes a juxtamedullary nephron from a cortical nephron?",
+      "Answer": "The juxtamedullary nephron has a longer loop of Henle compared to the cortical nephron.",
+      "Context": "Figure 26.7  Cortical and Juxtamedullary Nephrons\nDescription: The image is a labeled diagram comparing two types of nephrons: cortical and juxtamedullary. It shows the structure of each nephron, including the glomerulus, proximal and distal convoluted tubules, Loop of Henle, collecting duct, and associated blood vessels. The juxtamedullary nephron has a longer loop of Henle and vasa recta compared to the cortical nephron.\nFigure 26.7b, c",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 31",
+      "Question": "Which parts of the nephron and collecting system contribute to the production of concentrated urine?",
+      "Answer": "The entire nephron and collecting system contribute to the production of concentrated urine, with considerable modification of the filtrate occurring throughout the PCT, descending limb, thick ascending limb, DCT, and collecting ducts.",
+      "Context": "Summary of renal function:\nEach segment of nephron and collecting system contribute\nGlomerulus\nPCT\nDescending limb \nThick ascending limb \nDCT and collecting ducts\nConcentrated urine produced after considerable modification of filtrate",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 32",
+      "Question": "What is the primary structural difference between cortical and juxtamedullary nephrons, as described in the image?",
+      "Answer": "The juxtamedullary nephron has a longer loop of Henle and associated vasa recta compared to the cortical nephron.",
+      "Context": "Figure 26.7  Cortical and Juxtamedullary Nephrons\nDescription: The image is a labeled diagram comparing two types of nephrons: cortical and juxtamedullary. It shows the structure of each nephron, including the glomerulus, proximal and distal convoluted tubules, Loop of Henle, collecting duct, and associated blood vessels. The juxtamedullary nephron has a longer loop of Henle and vasa recta compared to the cortical nephron.\nFigure 26.7b, c",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 33",
+      "Question": "What is the primary structural difference between cortical and juxtamedullary nephrons?",
+      "Answer": "The juxtamedullary nephron has a longer loop of Henle and vasa recta compared to the cortical nephron.",
+      "Context": "Figure 26.7  Cortical and Juxtamedullary Nephrons\nDescription: The image is a labeled diagram comparing two types of nephrons: cortical and juxtamedullary. It shows the structure of each nephron, including the glomerulus, proximal and distal convoluted tubules, Loop of Henle, collecting duct, and associated blood vessels. The juxtamedullary nephron has a longer loop of Henle and vasa recta compared to the cortical nephron.\nFigure 26.7b, c",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 34",
+      "Question": "According to the image description, what are two external structures surrounding the human urinary bladder that are labeled?",
+      "Answer": "According to the image description, two external structures surrounding the bladder that are labeled are the ureters and the prostate gland.",
+      "Context": "Figure 26.19  Organs for the Collection and storage of Urine\nDescription: The image is a labeled anatomical diagram of the human urinary bladder and surrounding structures. The diagram highlights the bladder's internal features like rugae, ureteral openings, and the center of the trigone, as well as external features including the ureters, prostate gland, and urethral sphincters. The prostatic and membranous urethra are also indicated.\nFigure 26.19c",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 35",
+      "Question": "What do the arrows in the diagram of the nephron represent?",
+      "Answer": "The arrows indicate the movement of water, solutes, and filtrate through the different parts of the nephron during urine formation.",
+      "Context": "Figure 26.15  The Effects of ADH on the DCT and Collecting Ducts\nDescription: The image is a diagram of a nephron, the functional unit of a kidney, illustrating the process of urine formation. It highlights key components such as the glomerulus, proximal and distal convoluted tubules, the loop of Henle, and the collecting duct. Arrows with different colors indicate the movement of water, solutes, and filtrate through the nephron, culminating in urine storage and elimination.\nKnow what the direction and color of these arrows means!!\nFigure 26.15",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 36",
+      "Question": "What two ions are exchanged during the reabsorption process at the DCT?",
+      "Answer": "At the DCT, tubular cells reabsorb Na+ and Cl- in exchange for potassium or hydrogen ions, which are secreted.",
+      "Context": "Reabsorption and secretion at the DCT\nDCT performs final adjustment of urine\nActive secretion or absorption\nAbsorption \nTubular cells actively resorb Na+ and Cl-   \nIn exchange for potassium or hydrogen ions (secreted)",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 37",
+      "Question": "How does sympathetic activation affect the glomerular filtration rate (GFR)?",
+      "Answer": "Sympathetic activation decreases the GFR. This is accomplished by vasoconstriction of afferent arterioles, which slows the production of filtrate.",
+      "Context": "Sympathetic activation\nSystemic effects: vasoconstriction\nProduces powerful vasoconstriction of afferent arterioles\nDecreases GFR and slows production of filtrate\nChanges the regional pattern of blood flow\nOverrides local control (autoregulation)\nStimulates release of renin by JGA",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 38",
+      "Question": "What is the primary function of the countercurrent multiplier system, as described in the text?",
+      "Answer": "The countercurrent multiplier system, specifically within the loop of Henle, is primarily responsible for creating an osmotic gradient in the kidney's medullary interstitium, which enables the concentration of urine.",
+      "Context": "Figure 26.13  Countercurrent Multiplication and Concentration of Urine\nDescription: The image is a diagram of the loop of Henle in the kidney, a key component of the nephron. It illustrates the countercurrent multiplier system with the descending limb permeable to water and the ascending limb actively transporting out NaCl. This process creates an osmotic gradient in the medullary interstitium, enabling urine concentration.\nFigure 26.13b",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 39",
+      "Question": "What physiological processes does the composition of urine reflect?",
+      "Answer": "The composition of urine reflects the filtration, absorption, and secretion activity of the nephrons.",
+      "Context": "Composition of normal urine\nVaries with the metabolic and hormonal events of the body\nReflects filtration, absorption and secretion activity of the nephrons\nUrinalysis is the chemical and physical analysis of urine",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 40",
+      "Question": "What is the key structural difference between cortical and juxtamedullary nephrons?",
+      "Answer": "Juxtamedullary nephrons have Loops of Henle that extend deep into the renal pyramids, while cortical nephrons, the majority of all nephrons, do not have this characteristic.",
+      "Context": "Two types of nephron\nCortical nephrons\n~85% of all nephrons\nLocated in the cortex\nJuxtamedullary nephrons\nCloser to renal medulla\nLoops of Henle extend deep into renal pyramids",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 41",
+      "Question": "What is the main difference in location between cortical and juxtamedullary nephrons?",
+      "Answer": "Cortical nephrons are primarily located in the cortex, while juxtamedullary nephrons are closer to the renal medulla.",
+      "Context": "Two types of nephron\nCortical nephrons\n~85% of all nephrons\nLocated in the cortex\nJuxtamedullary nephrons\nCloser to renal medulla\nLoops of Henle extend deep into renal pyramids",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 42",
+      "Question": "What is the primary function of the kidneys, according to the provided text?",
+      "Answer": "According to the text, the kidneys produce urine. This is their main role within the urinary system.",
+      "Context": "Urinary system includes:\nDescription: The image is an X-ray of the human urinary system, including the kidneys, ureters, and urinary bladder. The renal pelvis, minor and major calyx are also visible and labeled. The 11th and 12th ribs are also visible. The ureters and urinary bladder are highlighted in red.\nThe kidneys\nProduce urine\nThe ureters\nThe urinary bladder\nStores urine\nThe urethra",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 43",
+      "Question": "What are the two types of nephrons shown in Figure 26.7, and where are they located within the kidney?",
+      "Answer": "Figure 26.7 illustrates cortical and juxtamedullary nephrons. These nephrons are located within the cortex and medulla of the kidney, respectively.",
+      "Context": "Figure 26.7  Cortical and Juxtamedullary Nephrons\nDescription: The diagram illustrates the structure of a kidney, differentiating between cortical and juxtamedullary nephrons within the cortex and medulla. It labels key components like collecting ducts, renal papilla with papillary ducts, and the minor calyx, showing the overall kidney structure and urine flow path. The image identifies the functional units of the kidney, including their components.\nFigure 26.7a",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 44",
+      "Question": "Where are Antidiuretic hormone (ADH) and Oxytocin (OT) produced and how do they reach the posterior pituitary?",
+      "Answer": "ADH and OT are produced in the supraoptic and paraventricular nuclei of the hypothalamus. They are transported to the posterior pituitary via the hypothalamohypophyseal tract.",
+      "Context": "Description: This diagram details the neuroendocrine pathways between the hypothalamus and the pituitary gland. It illustrates the release of Antidiuretic hormone (ADH) and Oxytocin (OT) from the supraoptic and paraventricular nuclei, their transport via the hypothalamohypophyseal tract, and subsequent release into circulation within the posterior pituitary. The anterior pituitary and its capillary plexus are also depicted.",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 45",
+      "Question": "What is the main process that moves solutes from the peritubular fluid into the tubular fluid?",
+      "Answer": "The main process described for moving solutes from the peritubular fluid into the tubular fluid is secretion.",
+      "Context": "Basic processes of urine formation\nFiltration\nBlood pressure \nWater and solutes across glomerular capillaries \nReabsorption\nThe removal of water and solutes from the filtrate\nSecretion\nTransport of solutes from the peritubular fluid into the tubular fluid",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 46",
+      "Question": "What is glomerular filtration rate (GFR), according to the text?",
+      "Answer": "GFR is the amount of filtrate produced in the kidneys each minute.",
+      "Context": "Glomerular filtration rate (GFR)\nAmount of filtrate produced in the kidneys each minute\nFactors that alter filtration pressure change GFR",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 47",
+      "Question": "What is the purpose of the text based on the information provided?",
+      "Answer": "The purpose of the text is to indicate that there will be a quiz related to regular attendance.",
+      "Context": "Just regular attendance quiz\u2026.",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 48",
+      "Question": "According to the diagram, what does the color and direction of the arrows illustrate regarding nephron function?",
+      "Answer": "The color and direction of the arrows indicate the movement of water, solutes, and filtrate through the nephron. They show how these substances travel through different parts of the nephron, ultimately leading to urine formation.",
+      "Context": "Figure 26.15  The Effects of ADH on the DCT and Collecting Ducts\nDescription: The image is a diagram of a nephron, the functional unit of a kidney, illustrating the process of urine formation. It highlights key components such as the glomerulus, proximal and distal convoluted tubules, the loop of Henle, and the collecting duct. Arrows with different colors indicate the movement of water, solutes, and filtrate through the nephron, culminating in urine storage and elimination.\nKnow what the direction and color of these arrows means!!\nFigure 26.15",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 49",
+      "Question": "What does the diagram in Figure 26.16 illustrate?",
+      "Answer": "The diagram in Figure 26.16 illustrates the function of a nephron within the kidney, showing its key functional areas and tracking substances in the filtrate.",
+      "Context": "Figure 26.16  A Summary of Renal Function\nDescription: The image is a diagram that illustrates the function of a nephron within the kidney, accompanied by a graph. The diagram showcases the nephron's key functional areas and the graph tracks the percentage of various substances like water, glucose, ions, and urea remaining in the filtrate as it moves through the nephron.\nFigure 26.16b",
+      "Image/Type": "Text Question"
+    },
+    {
+      "Question No.": "Question 50",
+      "Question": "What type of assessment is being given?",
+      "Answer": "A regular attendance quiz is being given.",
+      "Context": "Just regular attendance quiz\u2026.",
+      "Image/Type": "Text Question"
+    }
+  ]
+}

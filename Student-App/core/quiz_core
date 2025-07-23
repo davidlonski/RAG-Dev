@@ -1,0 +1,12 @@
+
+class Quiz:
+        def __init__(self, **kwargs):
+            self.collection_id = kwargs.get("collection_id")
+            self.collection = self.get_collection(self.collection_id)
+            self.quiz_data = kwargs.get("quiz_data")
+
+        def get_collection(self, collection_id):
+            self.collection = self.chroma_client.get_collection(collection_id)
+            return self.collection
+
+        

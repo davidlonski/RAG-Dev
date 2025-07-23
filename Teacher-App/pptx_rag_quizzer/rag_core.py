@@ -10,7 +10,6 @@ from google.generativeai.types import GenerationConfig
 from chromadb.utils import embedding_functions
 import torch
 
-load_dotenv()
 
 # Create ChromaDB directory if it doesn't exist
 os.makedirs("./chroma_db", exist_ok=True)
@@ -59,6 +58,9 @@ def get_llm_model():
     Returns:
         genai.GenerativeModel: The loaded LLM model.
     """
+
+    load_dotenv()
+    
     global _llm_model_cache
 
     if _llm_model_cache is None:
