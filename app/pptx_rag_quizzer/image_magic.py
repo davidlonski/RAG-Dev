@@ -44,6 +44,19 @@ class ImageMagic:
             enhanced_description, context, image_bytes, image_format
         )
 
+        # Handle JSON response if the model returns JSON instead of plain text
+        if final_description and final_description.strip().startswith('{'):
+            try:
+                import json
+                parsed = json.loads(final_description)
+                if 'output' in parsed and 'Description' in parsed['output']:
+                    final_description = parsed['output']['Description']
+                elif 'Description' in parsed:
+                    final_description = parsed['Description']
+            except json.JSONDecodeError:
+                # If JSON parsing fails, try to extract description from the text
+                pass
+
         return final_description
 
     def get_enhanced_description(
@@ -77,6 +90,7 @@ class ImageMagic:
                             Describe the image primarily based on its visual content.
                             The description must be 1 to 3 sentences long and focus on the most important visual elements and their core meaning.
                             Incorporate the provided OCR text or slide context only if it directly clarifies or adds significant understanding to the image's visual elements. Do not include context that merely repeats what's obvious in the image or is irrelevant.
+                            IMPORTANT: Return ONLY the description text, not JSON or any other format.
                         </instructions>
 
                         <input_data>
@@ -85,7 +99,7 @@ class ImageMagic:
                         </input_data>
 
                         <output_format>
-                            Description: description
+                            Return the description as plain text only, starting with "Description: "
                         </output_format>
 
                         <examples>
@@ -160,6 +174,7 @@ class ImageMagic:
                             Your task is to refine a given image description based on newly retrieved contextual information.
                             The refined description must be 1 to 3 sentences long.
                             The primary focus remains the image's visual content. Only incorporate the retrieved context if it provides new, crucial clarity or meaning that is not evident from the current description alone. Do not force context if it doesn't genuinely enhance the visual explanation.
+                            IMPORTANT: Return ONLY the description text, not JSON or any other format.
                         </instructions>
 
                         <input_data>
@@ -168,7 +183,7 @@ class ImageMagic:
                         </input_data>
 
                         <output_format>
-                            Description: description
+                            Return the description as plain text only, starting with "Description: "
                         </output_format>
 
                         <examples>

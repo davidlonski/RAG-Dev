@@ -10,7 +10,7 @@ from google.generativeai.types import GenerationConfig
 from chromadb.utils import embedding_functions
 import torch
 
-load_dotenv()
+
 
 # Create ChromaDB directory if it doesn't exist
 os.makedirs("./chroma_db", exist_ok=True)
@@ -74,6 +74,9 @@ def get_llm_model():
             genai.configure(api_key=api_key)
             _llm_model_cache = genai.GenerativeModel("gemini-2.0-flash-lite")
             print("LLM model loaded successfully!")
+        except genai.errors.GoogleGenerativeAIError as e:
+            print(f"Error loading LLM model: {e}")
+            return False
         except Exception as e:
             print(f"Error loading LLM model: {e}")
             return False
@@ -93,11 +96,14 @@ class RAGCore:
         Args:
             data (list[dict]): The parsed content from the PowerPoint.
         """
+
+        load_dotenv()
         self.embedding_model = get_embedding_model()
         self.llm_model = get_llm_model()
 
-        # Use persistent client instead of in-memory to avoid tenant issues
-        self.chroma_client = chromadb.PersistentClient(path="./chroma_db")
+        #self.chroma_client = chromadb.PersistentClient(path="./chroma_db")
+        # Use in-memory client to avoid tenant issues
+        self.chroma_client = chromadb.Client()
 
         # Create embedding function for ChromaDB with proper device handling
         try:
@@ -176,7 +182,6 @@ class RAGCore:
         all_texts = []
         all_ids = []
         all_metadatas = []
-        all_image_metadata = []
 
         for chunk in prepared_data:
             all_texts.append(chunk["content"])

@@ -1,7 +1,5 @@
 import streamlit as st
 import io
-import json
-import os
 import time
 import openpyxl
 import base64
@@ -75,8 +73,10 @@ def build_excel_quiz_spreadsheet():
     """
     all_quiz_questions = []
 
+    count = 25
+
     # Generate 3 random image quiz questions
-    for _ in range(3):
+    for _ in range(count):
         try:
             question = ss.quiz_master.generate_image_question()
             if question:  # Only add if not None
@@ -96,7 +96,7 @@ def build_excel_quiz_spreadsheet():
             )
 
     # Generate 3 random text quiz questions
-    for _ in range(3):
+    for _ in range(count):
         try:
             question = ss.quiz_master.generate_text_question()
             if question:  # Only add if not None
@@ -143,9 +143,9 @@ def build_excel_quiz_spreadsheet():
     # Set column widths for better readability
     sheet.column_dimensions["A"].width = 15
     sheet.column_dimensions["B"].width = 40
-    sheet.column_dimensions["C"].width = 25
-    sheet.column_dimensions["D"].width = 50
-    sheet.column_dimensions["E"].width = 15
+    sheet.column_dimensions["C"].width = 40
+    sheet.column_dimensions["D"].width = 60
+    sheet.column_dimensions["E"].width = 60  # Increased from 15 to accommodate 400px images
 
     # Write the quiz questions to the sheet
     for i, question in enumerate(all_quiz_questions):
@@ -174,8 +174,8 @@ def build_excel_quiz_spreadsheet():
                     img_data = base64.b64decode(question["image_bytes"])
                     img = PILImage.open(io.BytesIO(img_data))
 
-                    # Resize image to exactly 100x100 pixels
-                    img = img.resize((100, 100), PILImage.Resampling.LANCZOS)
+                    # Resize image to exactly 400x400 pixels
+                    img = img.resize((400, 400), PILImage.Resampling.LANCZOS)
 
                     # Save the resized image to a byte stream
                     img_byte_arr = io.BytesIO()
@@ -187,16 +187,16 @@ def build_excel_quiz_spreadsheet():
                     # Create an openpyxl Image object
                     excel_img = OpenpyxlImage(img_byte_arr)
 
-                    # Set the image size in Excel to 100x100
-                    excel_img.width = 100
-                    excel_img.height = 100
+                    # Set the image size in Excel to 400x400
+                    excel_img.width = 400
+                    excel_img.height = 400
 
                     # Add the image to the sheet, anchored to cell E{row_num}
                     excel_img.anchor = f"E{row_num}"
                     sheet.add_image(excel_img)
 
-                    # Set row height to accommodate the image
-                    sheet.row_dimensions[row_num].height = 75  # 100 pixels = ~75 points
+                    # Set row height to accommodate the larger image
+                    sheet.row_dimensions[row_num].height = 300  # 400 pixels = ~300 points
 
                     sheet[f"E{row_num}"] = "Image (see embedded)"
                 else:
@@ -314,7 +314,6 @@ elif ss.user_role == "teacher":
                 except Exception as e:
                     st.error(f"Error parsing PowerPoint: {e}")
                     st.info("Please try uploading a different PowerPoint file.")
-                    ss.app_stage = "dashboard"
                     st.rerun()
 
     # STAGE 3: Building image RAG
