@@ -3,3 +3,7 @@ __pycache__/
 *.pptx
 *.drawio
 chroma_db/
+chroma_db_env/
+.env
+/chroma-db-env
+/chroma-db

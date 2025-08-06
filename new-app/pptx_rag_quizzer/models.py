@@ -1,7 +1,6 @@
 import pydantic
 from enum import Enum
 from typing import List, Union
-from pptx_rag_quizzer.homwork_model import Homework
 
 class Type(Enum):
     image = "image"
@@ -46,9 +45,3 @@ class Presentation(pydantic.BaseModel):
     id: str
     slides: List[Slide]
 
-
-class RAG_quizzer(pydantic.BaseModel):
-    id: str
-    presentation: Presentation
-    collection_id: str
-    homework: List[Homework]

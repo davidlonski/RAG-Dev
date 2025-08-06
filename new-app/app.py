@@ -6,7 +6,8 @@ from datetime import datetime
 import sys
 import os
 from PIL import Image
-
+from models import RAG_quizzer
+import uuid
 # Add the current directory to the path to import our modules
 sys.path.append(os.path.dirname(__file__))
 
@@ -27,10 +28,6 @@ st.set_page_config(
 ss = st.session_state
 
 # Initialize session state
-if 'current_uploads' not in ss:
-    ss.current_uploads = []
-if 'homework_assignments' not in ss:
-    ss.homework_assignments = []
 if 'rag_core' not in ss:
     ss.rag_core = None
 if 'image_server' not in ss:
@@ -38,22 +35,21 @@ if 'image_server' not in ss:
 if 'image_magic' not in ss:
     ss.image_magic = None
 if 'app_stage' not in ss:
-    ss.app_stage = 'upload_pptx'
+    ss.app_stage = 'dashboard'
+if 'rag_quizzer_list' not in ss:
+    ss.rag_quizzer_list = []
+
 
 def initialize_services():
     """Initialize RAG core, image server, and image magic services"""
     try:
-        if ss.rag_core is None:
-            ss.rag_core = RAGCore()
-            # Test if the LLM model is working
-            if not ss.rag_core.llm_model:
-                st.error("❌ Google API key not found or invalid. Please check your .env file.")
-                return False
         if ss.image_server is None:
             ss.image_server = ImageServer()
-        if ss.image_magic is None:
-            # ImageMagic requires a RAGCore instance
-            ss.image_magic = ImageMagic(ss.rag_core)
+        ss.rag_core = RAGCore()
+        if not ss.rag_core.llm_model:
+            st.error("❌ Google API key not found or invalid. Please check your .env file.")
+            return False
+        ss.image_magic = ImageMagic(ss.rag_core)
         return True
     except Exception as e:
         st.error(f"❌ Error initializing services: {e}")
@@ -125,7 +121,7 @@ def upload_and_process_pptx():
 def process_presentation(presentation, auto_describe, create_collection):
     """Process the presentation and store in database"""
     try:
-        # Initialize services if needed
+        
         if not initialize_services():
             return
         
@@ -180,7 +176,7 @@ def describe_images():
         current_batch = all_images[batch_start:batch_end]
 
         # Check if all images in current batch have descriptions
-        batch_ready = all(hasattr(img_item, 'content') and img_item.content for img_item in current_batch)
+        batch_ready = all(img_item.content and img_item.content.lower() not in ['none', 'null', ''] for img_item in current_batch)
 
         if not batch_ready:
             # Show loading screen while generating descriptions
@@ -192,37 +188,38 @@ def describe_images():
 
             with st.spinner("AI is analyzing images and generating descriptions. This may take up to 1 minute per image..."):
                 for i, img_item in enumerate(current_batch):
-                        if not hasattr(img_item, 'content') or not img_item.content:
-                            try:
-                                st.write(
-                                    f"Describing image {batch_start + i + 1} of {total}..."
-                                )
-                                image_description = ss.image_magic.describe_image(
-                                    img_item.image_bytes,
-                                    img_item.extension,
-                                    img_item.slide_number
-                                )
-                                st.write(f"Raw description: {image_description}")
-                                
-                                if image_description and image_description != "None":
-                                    img_item.content = image_description
-                                    st.write(
-                                        f"✓ Image {batch_start + i + 1} described successfully"
-                                    )
-                                else:
-                                    img_item.content = "No description available"
-                                    st.write(
-                                        f"⚠️ No description generated for image {batch_start + i + 1}"
-                                    )
-                            except Exception as e:
-                                image_description = f"Error describing image: {e}"
+                    if not img_item.content or img_item.content.lower() in ['none', 'null', '']:
+                        try:
+                            st.write(
+                                f"Describing image {batch_start + i + 1} of {total}..."
+                            )
+                            image_description = ss.image_magic.describe_image(
+                                img_item.image_bytes,
+                                img_item.extension,
+                                img_item.slide_number,
+                                collection_id
+                            )
+                            st.write(f"Raw description: {image_description}")
+                            
+                            if image_description and image_description != "None":
                                 img_item.content = image_description
                                 st.write(
-                                    f"✗ Error describing image {batch_start + i + 1}: {e}"
+                                    f"✓ Image {batch_start + i + 1} described successfully"
                                 )
+                            else:
+                                img_item.content = "No description available"
+                                st.write(
+                                    f"⚠️ No description generated for image {batch_start + i + 1}"
+                                )
+                        except Exception as e:
+                            image_description = f"Error describing image: {e}"
+                            img_item.content = image_description
+                            st.write(
+                                f"✗ Error describing image {batch_start + i + 1}: {e}"
+                            )
 
-                st.success("All descriptions generated! Displaying images...")
-                st.rerun()
+            st.success("All descriptions generated! Displaying images...")
+            st.rerun()
         else:
             # Display current batch of images with descriptions
             st.write(
@@ -271,9 +268,21 @@ def describe_images():
                         ss.current_image_index = batch_end
                         st.rerun()
                 else:
-                    if st.button("Finish", key="finish"):
-                        ss.app_stage = "build_quiz_rag"
-                        st.rerun()
+                    # Verify all images have descriptions before finishing
+                    all_described = all(
+                        img.content and img.content.lower() not in ['none', 'null', ''] 
+                        for img in all_images
+                    )
+                    
+                    if all_described:
+                        if st.button("Finish", key="finish"):
+                            ss.app_stage = "build_quiz_rag"
+                            st.rerun()
+                    else:
+                        st.warning("Please ensure all images have descriptions before finishing.")
+                        if st.button("Force Finish", key="force_finish"):
+                            ss.app_stage = "build_quiz_rag"
+                            st.rerun()
     else:
         # Original single image processing for 6 or fewer images
         if idx < total:
@@ -288,13 +297,14 @@ def describe_images():
             )
 
             # Only generate description if it doesn't already exist
-            if not hasattr(img_item, 'content') or not img_item.content:
+            if not img_item.content or img_item.content.lower() in ['none', 'null', '']:
                 try:
                     st.write(f"Generating description for image {idx + 1}...")
                     image_description = ss.image_magic.describe_image(
                         img_item.image_bytes,
                         img_item.extension,
-                        img_item.slide_number
+                        img_item.slide_number,
+                        collection_id
                     )
                     st.write(f"Raw description: {image_description}")
                     
@@ -326,19 +336,93 @@ def describe_images():
                 else:
                     st.warning("Please provide a description.")
         else:
-            st.success("All images described!")
-            ss.app_stage = "build_quiz_rag"
+            # Verify all images have descriptions before transitioning
+            all_described = all(
+                img.content and img.content.lower() not in ['none', 'null', ''] 
+                for img in all_images
+            )
+            
+            if all_described:
+                st.success("All images described!")
+                ss.app_stage = "build_quiz_rag"
+                st.rerun()
+            else:
+                st.warning("Please ensure all images have descriptions before proceeding.")
+                if st.button("Force Continue", key="force_continue"):
+                    ss.app_stage = "build_quiz_rag"
+                    st.rerun()
+
+    
+def process_quiz_rag():
+    """Process the quiz and RAG"""
+    st.header("📋 Process Quiz and RAG")
+    
+    if 'presentation_metadata' not in ss:
+        st.error("No presentation metadata found. Please upload a presentation first.")
+        ss.app_stage = "upload_pptx"
+        st.rerun()
+        return
+    
+    presentation, collection_id = ss.presentation_metadata
+
+    
+
+
+    st.write(f"**Enter a name for the presentation:**")
+    name = st.text_input("Name", value=presentation.id)
+
+    if st.button("Create"):
+        # Create RAG collection
+        with st.spinner("Creating RAG collection..."):
+            try:
+                if collection_id:
+                    ss.rag_core.remove_collection(collection_id)
+            except Exception:
+                # Collection doesn't exist, which is fine
+                pass
+            collection_id = ss.rag_core.create_collection(presentation)        
+            st.success(f"✅ RAG collection created: {collection_id}")
+
+        if st.button("Save"):        # save collection id, rag core, and presentation to rag_quizzer_list
+            ss.rag_quizzer_list.append(RAG_quizzer(
+                id=str(uuid.uuid4()),
+                name=name,
+                collection_id=collection_id,
+                presentation=presentation
+            ))
+            st.success(f"✅ RAG quizzer saved: {name}")
+            ss.app_stage = "dashboard"
             st.rerun()
 
-
-
-def current_uploads():  
-    """Display current uploads"""
-    st.header("📋 Current Uploads")
     
-    if not ss.current_uploads:
-        st.write("No uploads found")
-        return
+
+
+def generate_homework():
+    """Generate homework"""
+    st.header("📋 Generate Homework")
+
+    for rag_quizzer in ss.rag_quizzer_list:
+        st.write(f"**Name:** {rag_quizzer.name}")
+        if st.button(f"Homework"):
+            ss.app_stage = "homework"
+            st.rerun()
+    
+    
+
+
+def dashboard():
+    """Display the dashboard"""
+    st.header("📋 Dashboard")
+    
+    if st.button("Upload PPTX"):
+        ss.app_stage = "upload_pptx"
+        st.rerun()
+
+    if len(ss.rag_quizzer_list) > 0:    
+        if st.button("Generate Homework"):
+            ss.app_stage = "generate_homework"
+            st.rerun()
+
 
 # Main app
 st.title("🎓 Teacher Dashboard - Database Integration")
@@ -348,31 +432,11 @@ st.write("Manage PowerPoint uploads, process images, and create homework assignm
 with st.sidebar:
     st.header("🧭 Navigation")
     
-    page = st.radio(
-        "Select Page:",
-        [
-            "📁 Upload PPTX",
-            "📋 Current Uploads",
-        ]
-    )
-    
-    st.markdown("---")
-    st.write("**System Status:**")
-    
-    # Service status
-    if ss.rag_core:
-        st.write("✅ RAG Core: Ready")
-    else:
-        st.write("❌ RAG Core: Not initialized")
-    
-    if ss.image_server:
-        st.write("✅ Image Server: Ready")
-    else:
-        st.write("❌ Image Server: Not initialized")
+    # Show current stage
+    st.write(f"**Current Stage:** {ss.app_stage.replace('_', ' ').title()}")
     
     # Statistics
-    st.write(f"**Uploads:** {len(ss.current_uploads)}")
-    st.write(f"**Homework:** {len(ss.homework_assignments)}")
+    st.write(f"**Uploads:** {len(ss.rag_quizzer_list)}")
     
     # Reset button
     if st.button("🔄 Reset All Data"):
@@ -384,12 +448,16 @@ with st.sidebar:
         st.rerun()
 
 # Main content based on selected page
-if ss.app_stage == "upload_pptx":
+if ss.app_stage == "dashboard":
+    dashboard()
+elif ss.app_stage == "upload_pptx":
     upload_and_process_pptx()
 elif ss.app_stage == "describe_images":
     describe_images()
-elif ss.app_stage == "current_uploads":
-    current_uploads()
+elif ss.app_stage == "build_quiz_rag":
+    process_quiz_rag()
+elif ss.app_stage == "generate_homework":
+    generate_homework()
 
 # Footer
 st.markdown("---")

@@ -143,6 +143,12 @@ class RAGCore:
 
         return collection_id
 
+    def remove_collection(self, collection_id: str):
+        """
+        This function is used to remove a collection.
+        """
+        self.chroma_client.delete_collection(name=collection_id)
+
 
     def query_collection(self, query_text: str, collection_id: str, n_results: int = 1):
         """
