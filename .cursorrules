@@ -1,0 +1,59 @@
+# Cursor Rules for RAG Application Development
+
+## Overview
+This project is a Retrieval-Augmented Generation (RAG) application built with Python, using ChromaDB as the vector store for document retrieval, Google’s Gemini LLM API for response generation, and Streamlit for the frontend user interface. These rules ensure Cursor AI assists in development by making precise, relevant changes without modifying unrelated code or project structure.
+
+## General Guidelines
+- **Scope of Changes**: Only modify files or code sections explicitly mentioned in the user’s prompt. Do not make unprompted changes to other files, configurations, or project structure.
+- **Technology Stack**: Adhere strictly to the following technologies unless otherwise specified:
+  - **ChromaDB**: For storing and retrieving document embeddings.
+  - **Gemini LLM API**: For generating responses based on retrieved context.
+  - **Streamlit**: For building the frontend user interface.
+  - **Python**: Primary programming language, following PEP 8 style guidelines.
+- **Context Awareness**: Use the provided prompt and any attached files (via `@file` or `@codebase`) to understand the task. Retrieve relevant context from the project’s vector store or explicitly referenced files before generating code.
+- **Error Prevention**: Avoid suggesting changes to files or directories listed in `.cursorignore` (e.g., `mycollection/`, `__pycache__/`). Do not index or reference these files.
+
+## File Modification Rules
+- **Explicit References**: Only edit files explicitly referenced in the prompt (e.g., via `@app.py` or specific file paths). If a file is not mentioned, assume it should remain unchanged.
+- **Project Structure**: Maintain the existing project directory structure. Do not rename, move, or delete files unless explicitly instructed.
+- **Code Style**: Follow the project’s existing code style (e.g., PEP 8 for Python). Use consistent naming conventions, indentation (4 spaces), and docstrings for functions.
+- **RAG-Specific Logic**:
+  - When working with ChromaDB, use `chromadb.PersistentClient` for persistent storage and LangChain’s `Chroma` for vector store operations.
+  - For Gemini LLM API, use the correct model identifier (e.g., `gemini-2.5-pro-experimental`) and ensure API calls are made via the Google AI API endpoint.
+  - For Streamlit, use components like `st.chat_input`, `st.text_area`, and `st.sidebar` for user inputs and outputs, ensuring a clean and interactive UI.
+
+## Prompt Handling
+- **Prompt Clarity**: Interpret prompts literally and focus on the specific task requested. If the prompt is ambiguous, prioritize minimal changes and ask for clarification in the response (e.g., “Please specify which file to modify”).
+- **Context Retrieval**: Use RAG principles to retrieve relevant code or documentation from the project’s vector store (e.g., ChromaDB) or attached files before generating responses. Do not rely solely on external or irrelevant context.
+- **Avoid Overwrites**: Do not overwrite existing functionality or configurations (e.g., Streamlit app settings, ChromaDB collection settings) unless explicitly requested.
+
+## RAG Application Development
+- **Document Ingestion**: Support PDF, DOCX, and TXT files using LangChain loaders (e.g., `PyPDFLoader`, `Docx2txt`, `TextLoader`). Split documents into chunks using LangChain’s `RecursiveCharacterTextSplitter` for coherent retrieval.
+- **Embedding and Retrieval**: Store embeddings in ChromaDB using `OpenAIEmbeddings` or equivalent compatible with Gemini LLM API. Retrieve top-k relevant chunks based on semantic similarity for query processing.
+- **Response Generation**: Pass retrieved chunks as context to the Gemini LLM API for response generation. Ensure responses are concise, accurate, and grounded in the retrieved context.
+- **Streamlit UI**: Build intuitive interfaces with Streamlit, including:
+  - A sidebar for uploading documents and entering API keys.
+  - A chat interface using `st.chat_message` and `st.chat_input` for user queries and responses.
+  - Persistent storage of chat history in `st.session_state`.
+
+## Debugging and Error Handling
+- **Validation**: Before applying changes, validate that they align with the prompt and do not introduce errors (e.g., syntax errors, missing imports).
+- **Error Reporting**: If an error occurs (e.g., API key issues, ChromaDB connection failure), suggest fixes in the response but do not modify code unless instructed.
+- **Logging**: Encourage adding logging statements (e.g., Python’s `logging` module) to track application behavior, especially for ChromaDB and Gemini API interactions.
+
+## Example Workflow
+- **Prompt Example**: “Add a function to `app.py` to handle PDF uploads and store embeddings in ChromaDB.”
+  - **Action**: Modify only `app.py` to add a function using `PyPDFLoader` and `Chroma` from LangChain. Do not touch other files or add unrelated features.
+  - **Output**: Generate the function, ensure it integrates with the existing Streamlit UI, and validate imports (e.g., `from langchain_community.document_loaders import PyPDFLoader`).
+- **Prompt Example**: “Fix a bug in the Streamlit chat interface where responses are not displaying.”
+  - **Action**: Inspect the relevant Streamlit code (e.g., `app.py`), check `st.chat_message` or `st.write_stream` usage, and suggest targeted fixes without altering unrelated logic.
+
+## Integration with Gemini LLM API
+- **API Configuration**: Use the Gemini API key provided by the user via Streamlit’s `st.sidebar.text_input`. Ensure the correct model identifier and endpoint (e.g., `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-experimental`) are used.
+- **Context Window**: Respect Gemini 2.5 Pro’s context window (up to 2M tokens). Avoid sending excessive context by filtering relevant files using `.cursorignore` and prompt-specific references.
+- **Error Handling**: If the Gemini API connection fails, suggest checking the API key or endpoint in the response but do not modify configuration files.
+
+## Additional Notes
+- **.cursorignore**: Refer to the `.cursorignore` file to exclude irrelevant directories or files (e.g., `mycollection/`, `__pycache__/`, `.venv/`) from indexing or suggestions.
+- **Documentation**: When generating code, include brief docstrings or comments explaining the purpose of functions or key logic, especially for RAG pipeline components.
+- **Consistency**: Ensure all changes align with the existing codebase’s structure, naming conventions, and dependencies as defined in `requirements.txt`.

@@ -1,6 +1,6 @@
 import json
 from pptx_rag_quizzer.rag_core import RAGCore
-from pptx_rag_quizzer.Image_server import ImageServer
+from pptx_rag_quizzer.image_server import ImageServer
 import streamlit as st
 from typing import List, Dict, Any, Optional
 import hashlib

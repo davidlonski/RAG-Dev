@@ -1,7 +1,7 @@
 import re
 import time
 import base64
-from pptx_rag_quizzer.Image_server import ImageServer
+from pptx_rag_quizzer.image_server import ImageServer
 from pptx_rag_quizzer.rag_core import RAGCore
 
 class QuizMaster:

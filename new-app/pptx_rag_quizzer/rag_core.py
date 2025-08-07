@@ -5,11 +5,11 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
-from pptx_rag_quizzer.models import Presentation, Type
+from pptx_rag_quizzer.presentation_model import Presentation, Type
 import io
 import time
 from PIL import Image as PILImage
-from pptx_rag_quizzer.Image_server import ImageServer
+from pptx_rag_quizzer.image_server import ImageServer
 
 load_dotenv()
 

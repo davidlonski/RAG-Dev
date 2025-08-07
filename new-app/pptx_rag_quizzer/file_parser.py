@@ -1,10 +1,10 @@
 import uuid
 from pptx import Presentation as pptx_lib
 from pptx.enum.shapes import MSO_SHAPE_TYPE
-from pptx_rag_quizzer.models import Image, Text, Slide, Presentation, Type
+from pptx_rag_quizzer.presentation_model import Image, Text, Slide, Presentation, Type
 from typing import List, Union
 
-def parse_powerpoint(file_object):
+def parse_powerpoint(file_object, file_name):
     """
     Parses an in-memory PowerPoint file to extract text and images in order.
 
@@ -21,6 +21,7 @@ def parse_powerpoint(file_object):
 
     PRESENTATION = Presentation(
         id=str(uuid.uuid4()),
+        name=file_name,
         slides=[],
     )
 

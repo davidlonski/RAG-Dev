@@ -43,5 +43,6 @@ class Slide(pydantic.BaseModel):
 
 class Presentation(pydantic.BaseModel):
     id: str
+    name: str
     slides: List[Slide]
 
