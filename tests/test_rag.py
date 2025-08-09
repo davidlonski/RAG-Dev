@@ -1,6 +1,6 @@
 from pptx_rag_quizzer.rag_core import RAGCore
 from pptx_rag_quizzer.file_parser import parse_powerpoint
-from pptx_rag_quizzer.models import Presentation
+from pptx_rag_quizzer.presentation_model import Presentation
 import streamlit as st
 
 st.title("RAG Test")

@@ -5,7 +5,7 @@ import json
 from pptx_rag_quizzer.file_parser import parse_powerpoint
 from pptx_rag_quizzer.rag_core import RAGCore
 from pptx_rag_quizzer.quiz_master import QuizMaster
-from pptx_rag_quizzer.Image_server import ImageServer
+from database.image_server import ImageServer
 
 # Page configuration
 st.set_page_config(

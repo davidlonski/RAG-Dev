@@ -14,8 +14,9 @@ sys.path.append(os.path.dirname(__file__))
 from pptx_rag_quizzer.file_parser import parse_powerpoint
 from pptx_rag_quizzer.rag_core import RAGCore
 from pptx_rag_quizzer.quiz_master import QuizMaster
-from pptx_rag_quizzer.image_server import ImageServer
+from database.image_server import ImageServer
 from pptx_rag_quizzer.image_magic import ImageMagic
+from database.homework_server import HomeworkServer
 
 # Page configuration
 st.set_page_config(
@@ -30,6 +31,8 @@ ss = st.session_state
 # Initialize session state
 if 'rag_core' not in ss:
     ss.rag_core = None
+if 'homework_server' not in ss:
+    ss.homework_server = None
 if 'image_server' not in ss:
     ss.image_server = None
 if 'image_magic' not in ss:
@@ -40,6 +43,8 @@ if 'rag_quizzer_list' not in ss:
     ss.rag_quizzer_list = []
 if 'homework_assignments' not in ss:
     ss.homework_assignments = []
+if 'homework_preview' not in ss:
+    ss.homework_preview = None
 
 
 def initialize_services():
@@ -47,6 +52,8 @@ def initialize_services():
     try:
         if ss.image_server is None:
             ss.image_server = ImageServer()
+        if ss.homework_server is None:
+            ss.homework_server = HomeworkServer()
         ss.rag_core = RAGCore()
         if not ss.rag_core.llm_model:
             st.error("❌ Google API key not found or invalid. Please check your .env file.")
@@ -400,7 +407,7 @@ def process_quiz_rag():
 def generate_homework():
     """Generate homework assignments"""
     st.header("📋 Generate Homework")
-    
+
     if len(ss.rag_quizzer_list) == 0:
         st.warning("⚠️ No presentations uploaded yet. Please upload a PowerPoint file first.")
         if st.button("← Back to Dashboard"):
@@ -468,58 +475,14 @@ def generate_homework():
                     
                     if generated_questions:
                         st.success(f"✅ Generated {len(generated_questions)} questions successfully!")
-                        
-                        # Display generated homework
-                        st.subheader("Generated Homework")
-                        st.write(f"**Assignment:** {selected_quizzer.name}")
-                        st.write(f"**Questions:** {len(generated_questions)}")
-                        st.write("---")
-                        
-                        for i, question_data in enumerate(generated_questions, 1):
-                            st.write(f"**Question {i}:**")
-                            st.write(question_data["question"])
-                            
-                            # Display image if it's an image question
-                            if question_data["type"] == "image" and "image_bytes" in question_data:
-                                try:
-                                    import base64
-                                    image_bytes = base64.b64decode(question_data["image_bytes"])
-                                    st.image(image_bytes, caption="Question Image", use_container_width=True)
-                                except Exception as e:
-                                    st.warning(f"Could not display image: {e}")
-                            
-                            # Show answer in expandable section
-                            with st.expander(f"Answer {i}"):
-                                st.write(f"**Answer:** {question_data['answer']}")
-                                st.write(f"**Context:** {question_data['context'][:200]}...")
-                            
-                            st.write("---")
-                        
-                        # Save homework assignment
-                        if st.button("💾 Save Homework Assignment"):
-                            # Create homework assignment object
-                            homework_assignment = {
-                                'id': str(uuid.uuid4()),
-                                'name': f"Homework - {selected_quizzer.name}",
-                                'presentation_name': selected_quizzer.name,
-                                'presentation_id': selected_quizzer.id,
-                                'created_date': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                'num_questions': len(generated_questions),
-                                'num_text_questions': text_questions_generated,
-                                'num_image_questions': image_questions_generated,
-                                'questions': generated_questions,
-                                'status': 'active'
-                            }
-                            
-                            # Initialize homework_assignments if not exists
-                            if 'homework_assignments' not in ss:
-                                ss.homework_assignments = []
-                            
-                            ss.homework_assignments.append(homework_assignment)
-                            st.success("✅ Homework assignment saved!")
-                            st.write(f"**Debug:** Assignment saved. Total assignments: {len(ss.homework_assignments)}")
-                            # Don't rerun immediately to allow user to see the success message
-                            # The assignment will be visible when they navigate to manage assignments
+                        # Persist preview in session state for saving after rerun
+                        ss.homework_preview = {
+                            'collection_id': selected_quizzer.collection_id,
+                            'presentation_name': selected_quizzer.name,
+                            'questions': generated_questions,
+                            'num_text_questions': text_questions_generated,
+                            'num_image_questions': image_questions_generated,
+                        }
                     else:
                         st.error("❌ Failed to generate any questions. Please try again.")
                         
@@ -527,6 +490,56 @@ def generate_homework():
                     st.error(f"❌ Error generating homework: {e}")
                     st.exception(e)
     
+        # If there is a preview in session state, render it and offer Save/Clear
+        if ss.get('homework_preview'):
+            preview = ss.homework_preview
+            st.subheader("Generated Homework (Preview)")
+            st.write(f"**Assignment:** {preview['presentation_name']}")
+            total_q = len(preview['questions'])
+            st.write(f"**Questions:** {total_q}  —  Text: {preview['num_text_questions']}, Image: {preview['num_image_questions']}")
+            st.write("---")
+            for i, question_data in enumerate(preview['questions'], 1):
+                st.write(f"**Question {i}:**")
+                st.write(question_data["question"])
+                if question_data["type"] == "image" and "image_bytes" in question_data:
+                    try:
+                        import base64
+                        image_bytes = base64.b64decode(question_data["image_bytes"])
+                        st.image(image_bytes, caption="Question Image", use_container_width=True)
+                    except Exception as e:
+                        st.warning(f"Could not display image: {e}")
+                with st.expander(f"Answer {i}"):
+                    st.write(f"**Answer:** {question_data['answer']}")
+                    st.write(f"**Context:** {question_data['context'][:200]}...")
+                st.write("---")
+
+            save_col, clear_col = st.columns(2)
+            with save_col:
+                st.write("**Enter a name for the homework assignment:**")
+                name = st.text_input("Homework Name", value=preview['presentation_name'])
+                if name:
+                    if st.button("💾 Save Homework Assignment", key="save_preview"):
+                        homework_assignment = {
+                            'collection_id': preview['collection_id'],
+                            'questions': preview['questions'],
+                            'num_text_questions': preview['num_text_questions'],
+                            'num_image_questions': preview['num_image_questions'],
+                            'status': 'active',
+                            'name': name,
+                        }
+                        # When saving a new assignment, store only the assignment ID
+                        assignment_id = ss.homework_server.create_assignment(homework_assignment)
+                        if assignment_id:
+                            print(f"🔍 assignment created successfully")
+                            ss.homework_assignments.append(assignment_id)
+                        ss.homework_preview = None
+                        st.success("✅ Homework assignment saved!")
+                        st.rerun()
+            with clear_col:
+                if st.button("🧹 Clear Preview", key="clear_preview"):
+                    ss.homework_preview = None
+                    st.info("Preview cleared.")
+
     # Back button
     if st.button("← Back to Dashboard"):
         ss.app_stage = "dashboard"
@@ -536,6 +549,7 @@ def generate_homework():
 def manage_assignments():
     """Manage homework assignments"""
     st.header("📚 Manage Assignments")
+    print(f"🔍 ss.homework_assignments: {ss.homework_assignments}")
     
     if len(ss.rag_quizzer_list) == 0:
         st.warning("⚠️ No presentations uploaded yet. Please upload a PowerPoint file first.")
@@ -544,32 +558,24 @@ def manage_assignments():
             st.rerun()
         return
     
-    # Initialize assignments in session state if not exists
-    if 'homework_assignments' not in ss:
-        ss.homework_assignments = []
-    
-    # Debug information
-    st.write(f"**Debug:** Found {len(ss.homework_assignments)} assignments in session state")
-    
-    # Debug button to show session state
-    if st.button("🔍 Debug Session State"):
-        st.write("**Session State Contents:**")
-        st.write(f"- rag_quizzer_list: {len(ss.rag_quizzer_list)} items")
-        st.write(f"- homework_assignments: {len(ss.homework_assignments)} items")
-        if ss.homework_assignments:
-            st.write("**Assignment Details:**")
-            for i, assignment in enumerate(ss.homework_assignments):
-                st.write(f"  {i+1}. {assignment.get('name', 'Unnamed')} - {assignment.get('num_questions', 0)} questions")
-    
     st.subheader("Current Assignments")
     
     if len(ss.homework_assignments) == 0:
         st.info("📝 No homework assignments created yet.")
     else:
-        for i, assignment in enumerate(ss.homework_assignments):
+        # Fetch assignments from DB using HomeworkServer
+        assignments = []
+        for assignment_id in ss.homework_assignments:
+            print(f"🔍 fetching assignment_id: {assignment_id} (type: {type(assignment_id)})")
+            assignment = ss.homework_server.get_assignment(assignment_id, include_questions=True)
+            print(f"🔍 assignment fetched: {assignment}")
+            if assignment:
+                assignments.append(assignment)
+            else:
+                print(f"❌ Assignment with ID {assignment_id} not found in DB.")
+        for i, assignment in enumerate(assignments):
             with st.expander(f"📋 Assignment {i+1}: {assignment.get('name', 'Unnamed')}"):
-                st.write(f"**Presentation:** {assignment.get('presentation_name', 'Unknown')}")
-                st.write(f"**Created:** {assignment.get('created_date', 'Unknown')}")
+                st.write(f"**Created:** {assignment.get('created_at', 'Unknown')}")
                 st.write(f"**Total Questions:** {assignment.get('num_questions', 0)}")
                 st.write(f"**Text Questions:** {assignment.get('num_text_questions', 0)}")
                 st.write(f"**Image Questions:** {assignment.get('num_image_questions', 0)}")
@@ -591,37 +597,11 @@ def manage_assignments():
                         st.info("Results viewing feature coming soon!")
                 with col2:
                     if st.button(f"🗑️ Delete", key=f"delete_{i}"):
+                        # Delete from DB and session
+                        ss.homework_server.delete_assignment(assignment['id'])
                         ss.homework_assignments.pop(i)
                         st.success("✅ Assignment deleted!")
                         st.rerun()
-    
-    # Create new assignment
-    st.subheader("Create New Assignment")
-    selected_quizzer = st.selectbox(
-        "Choose a presentation:",
-        options=ss.rag_quizzer_list,
-        format_func=lambda x: x.name,
-        key="manage_select"
-    )
-    
-    if selected_quizzer:
-        assignment_name = st.text_input("Assignment name", value=f"Homework - {selected_quizzer.name}")
-        
-        if st.button("➕ Create Assignment"):
-            new_assignment = {
-                'id': str(uuid.uuid4()),
-                'name': assignment_name,
-                'presentation_name': selected_quizzer.name,
-                'presentation_id': selected_quizzer.id,
-                'created_date': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                'num_questions': 5,
-                'difficulty': 'Medium',
-                'status': 'active'
-            }
-            ss.homework_assignments.append(new_assignment)
-            st.success("✅ New assignment created!")
-            st.rerun()
-    
     # Back button
     if st.button("← Back to Dashboard", key="manage_back"):
         ss.app_stage = "dashboard"
@@ -695,17 +675,16 @@ def dashboard():
         st.rerun()
 
     if len(ss.rag_quizzer_list) > 0:    
-        for rag_quizzer in ss.rag_quizzer_list:
-            st.write(f"**Name:** {rag_quizzer.name}")
-            if st.button(f"Generate Homework"):
-                ss.app_stage = "generate_homework"
-                st.rerun()
-            if st.button(f"Manage Assignments"):
-                ss.app_stage = "manage_assignments" 
-                st.rerun()
-            if st.button(f"Remove PowerPoint"):
-                ss.app_stage = "remove_powerpoint"
-                st.rerun()
+        if st.button(f"Generate Homework"):
+            ss.app_stage = "generate_homework"
+            st.rerun()
+        if st.button(f"Manage Assignments"):
+            ss.app_stage = "manage_assignments" 
+            st.rerun()
+        if st.button(f"Remove PowerPoint"):
+            ss.app_stage = "remove_powerpoint"
+            st.rerun()
+            
 
 
 # Main app
@@ -721,6 +700,7 @@ with st.sidebar:
     
     # Statistics
     st.write(f"**Uploads:** {len(ss.rag_quizzer_list)}")
+    st.write(f"**Assignments:** {len(ss.homework_assignments)}")
     
     # Reset button
     if st.button("🔄 Reset All Data"):

@@ -1,7 +1,7 @@
 import re
 import time
 import base64
-from pptx_rag_quizzer.image_server import ImageServer
+from database.image_server import ImageServer
 from pptx_rag_quizzer.rag_core import RAGCore
 
 class QuizMaster:
@@ -117,11 +117,20 @@ class QuizMaster:
                     image_extension = value
             
             if image_id is not None:
-                image_bytes = self.image_server.get_image(image_id)
-                if image_bytes and len(image_bytes) > 0:
-                    image_bytes = image_bytes[0]
-                else:
-                    print("No image bytes found")
+                # Fetch image from DB and handle multiple possible return shapes
+                fetched = self.image_server.get_image(image_id)
+                image_bytes = None
+                if fetched is None:
+                    image_bytes = None
+                elif isinstance(fetched, tuple):
+                    image_bytes = fetched[0] if len(fetched) > 0 else None
+                elif isinstance(fetched, dict):
+                    image_bytes = fetched.get("image_data")
+                elif isinstance(fetched, (bytes, bytearray, memoryview)):
+                    image_bytes = bytes(fetched)
+
+                if not image_bytes:
+                    print(f"No image bytes found for image_id={image_id}")
                     return None
             else:
                 print("No image id found")
