@@ -5,6 +5,7 @@ import time
 from PIL import Image
 import io
 import re
+from pptx_rag_quizzer.utils import clean_text, format_context_entries
 
 
 class RAGController:
@@ -39,18 +40,18 @@ class RAGController:
                 n_results=n_results,
                 include=["documents", "metadatas", "embeddings"],
             )
-            relevant_passage = retrieved_results["documents"][0]
         elif collection_name == "quiz":
             retrieved_results = self.rag_core.quiz_collection.query(
                 query_texts=[query_text],
                 n_results=n_results,
                 include=["documents", "metadatas", "embeddings"],
             )
-            relevant_passage = retrieved_results["documents"][0]
         else:
             raise ValueError(f"Invalid collection name: {collection_name}")
 
-        return relevant_passage
+        documents = retrieved_results.get("documents", [[]])[0]
+        metadatas = retrieved_results.get("metadatas", [[]])[0]
+        return format_context_entries(documents, metadatas)
 
     def query_collection_multiple(
         self, query_text: str, collection_name: str, n_results: int = 3
@@ -94,9 +95,9 @@ class RAGController:
         for attempt in range(max_retries):
             try:
                 response = self.rag_core.llm_model.generate_content(
-                    contents=[prompt], generation_config=generation_config
+                    contents=[clean_text(prompt)], generation_config=generation_config
                 )
-                return response.text
+                return clean_text(response.text)
             except Exception as e:
                 if "Resource has been exhausted" in str(e):
                     print(
@@ -167,10 +168,10 @@ class RAGController:
                     }
                 }
                 response = self.rag_core.llm_model.generate_content(
-                    contents=[image_part, "\n", prompt],
+                    contents=[image_part, "\n", clean_text(prompt)],
                     generation_config=generation_config,
                 )
-                return response.text
+                return clean_text(response.text)
             except Exception as e:
                 if "Resource has been exhausted" in str(e):
                     print(
@@ -189,7 +190,14 @@ class RAGController:
         This function is used to get the context of a random slide.
         """
         collection_data = self.rag_core.quiz_collection.get()
-        return random.choice(collection_data["documents"])
+        documents = collection_data.get("documents", [])
+        if not documents:
+            return ""
+        choice = random.choice(documents)
+        # documents is a list of lists in Chroma; flatten if needed
+        if isinstance(choice, list):
+            choice = "\n".join(choice)
+        return clean_text(choice)
 
     def get_random_image_context(self):
         """
@@ -232,7 +240,9 @@ class RAGController:
 
                         image_bytes = base64.b64decode(image_bytes_encoded)
                         document = collection_data["documents"][random_index]
-                        return image_extension, image_bytes, document
+                        if isinstance(document, list):
+                            document = "\n".join(document)
+                        return image_extension, image_bytes, clean_text(document)
                     except Exception as e:
                         print(f"Failed to decode image bytes: {e}")
                         attempts += 1
@@ -267,12 +277,24 @@ class RAGController:
 
         collection_data = self.rag_core.picture_collection.get()
 
-        context = []
-
+        documents = []
+        metadatas = []
         for i, metadata in enumerate(collection_data["metadatas"]):
             if metadata.get("slide_number") == slide_number:
-                context.append(collection_data["documents"][i])
+                metadatas.append(metadata)
+                documents.append(collection_data["documents"][i])
 
-        context = "\n\n".join(context)
+        # Chroma returns inner lists; flatten and clean
+        flattened_docs = []
+        for d in documents:
+            if isinstance(d, list):
+                flattened_docs.extend(d)
+            else:
+                flattened_docs.append(d)
 
-        return context
+        formatted = format_context_entries(
+            flattened_docs,
+            metadatas,
+            heading=f"Context for slide {slide_number}",
+        )
+        return formatted
