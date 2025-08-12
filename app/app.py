@@ -17,6 +17,8 @@ from pptx_rag_quizzer.rag_controller import RAGController
 from pptx_rag_quizzer.quiz_master import QuizMaster
 from pptx_rag_quizzer.file_parser import parse_powerpoint
 from pptx_rag_quizzer.image_magic import ImageMagic
+from auth import require_login, logout
+from storage import save_homework, list_homework
 
 # --- Page Configuration ---
 st.set_page_config(page_title="RAG Homework Generator", page_icon="📚", layout="wide")
@@ -228,9 +230,8 @@ with st.sidebar:
 
     if ss.user_role:
         if st.button("Logout"):
-            # Just go back to role selection, don't reset everything
+            logout()
             ss.app_stage = "role_selection"
-            ss.user_role = None
             st.rerun()
 
     if ss.user_role:
@@ -252,8 +253,7 @@ if ss.app_stage == "role_selection":
         st.write("• Generate homework spreadsheets")
 
         if st.button("I'm a Teacher"):
-            ss.user_role = "teacher"
-            ss.app_stage = "dashboard"
+            ss.app_stage = "login_teacher"
             st.rerun()
 
     with col2:
@@ -261,9 +261,18 @@ if ss.app_stage == "role_selection":
         st.write("• View homework spreadsheets")
 
         if st.button("I'm a Student"):
-            ss.user_role = "student"
-            ss.app_stage = "dashboard"
+            ss.app_stage = "login_student"
             st.rerun()
+
+# Simple login stages
+elif ss.app_stage == "login_teacher":
+    if require_login("teacher"):
+        ss.app_stage = "dashboard"
+        st.rerun()
+elif ss.app_stage == "login_student":
+    if require_login("student"):
+        ss.app_stage = "dashboard"
+        st.rerun()
 
 # TEACHER FLOW
 elif ss.user_role == "teacher":
@@ -514,6 +523,10 @@ elif ss.user_role == "teacher":
         )
 
         if st.button("Save Spreadsheet"):
+            # Persist to shared storage with owner metadata
+            uid = st.session_state.get("user_id") or "teacher"
+            uname = st.session_state.get("user_name")
+            save_homework(owner_id=uid, owner_name=uname, homework_name="quiz_questions", excel_bytes=ss.excel_file)
             ss.spreadsheet_list.append(ss.excel_file)
             st.success("Spreadsheet saved successfully!")
 
