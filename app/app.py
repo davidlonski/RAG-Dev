@@ -18,7 +18,6 @@ from pptx_rag_quizzer.quiz_master import QuizMaster
 from pptx_rag_quizzer.file_parser import parse_powerpoint
 from pptx_rag_quizzer.image_magic import ImageMagic
 from auth import require_login, logout
-from storage import save_homework, list_homework
 
 # --- Page Configuration ---
 st.set_page_config(page_title="RAG Homework Generator", page_icon="📚", layout="wide")
@@ -523,10 +522,7 @@ elif ss.user_role == "teacher":
         )
 
         if st.button("Save Spreadsheet"):
-            # Persist to shared storage with owner metadata
-            uid = st.session_state.get("user_id") or "teacher"
-            uname = st.session_state.get("user_name")
-            save_homework(owner_id=uid, owner_name=uname, homework_name="quiz_questions", excel_bytes=ss.excel_file)
+            # Keep in-memory list only (teacher can download)
             ss.spreadsheet_list.append(ss.excel_file)
             st.success("Spreadsheet saved successfully!")
 
