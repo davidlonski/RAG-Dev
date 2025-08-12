@@ -549,7 +549,6 @@ def generate_homework():
 def manage_assignments():
     """Manage homework assignments"""
     st.header("📚 Manage Assignments")
-    print(f"🔍 ss.homework_assignments: {ss.homework_assignments}")
     
     if len(ss.rag_quizzer_list) == 0:
         st.warning("⚠️ No presentations uploaded yet. Please upload a PowerPoint file first.")
@@ -566,9 +565,7 @@ def manage_assignments():
         # Fetch assignments from DB using HomeworkServer
         assignments = []
         for assignment_id in ss.homework_assignments:
-            print(f"🔍 fetching assignment_id: {assignment_id} (type: {type(assignment_id)})")
             assignment = ss.homework_server.get_assignment(assignment_id, include_questions=True)
-            print(f"🔍 assignment fetched: {assignment}")
             if assignment:
                 assignments.append(assignment)
             else:
@@ -702,14 +699,6 @@ with st.sidebar:
     st.write(f"**Uploads:** {len(ss.rag_quizzer_list)}")
     st.write(f"**Assignments:** {len(ss.homework_assignments)}")
     
-    # Reset button
-    if st.button("🔄 Reset All Data"):
-        ss.current_uploads = []
-        ss.homework_assignments = []
-        ss.rag_core = None
-        ss.image_server = None
-        ss.image_magic = None
-        st.rerun()
 
 # Main content based on selected page
 if ss.app_stage == "dashboard":

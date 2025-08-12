@@ -1,56 +1,36 @@
 import chromadb
-from sentence_transformers import SentenceTransformer
 import uuid
 import random
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
-import google.generativeai.types as types
 from google.generativeai.types import GenerationConfig
-from chromadb.utils import embedding_functions
-import torch
+from pptx_rag_quizzer.presentation_model import Presentation, Type
+import io
+import time
+from PIL import Image as PILImage
+from database.image_server import ImageServer
 
+load_dotenv()
 
-
-# Create ChromaDB directory if it doesn't exist
-os.makedirs("./chroma_db", exist_ok=True)
-
-# Global model cache
-_embedding_model_cache = None
 _llm_model_cache = None
+_chroma_db_client_cache = None
 
 
-def get_embedding_model():
-    """Loads and caches the sentence-transformer model."""
-    global _embedding_model_cache
+def get_chroma_db_client():
+    """
+    Configures the ChromaDB client using the CHROMA_SERVER_HOST and CHROMA_SERVER_HTTP_PORT environment variables.
+    """
+    global _chroma_db_client_cache
 
-    if _embedding_model_cache is None:
-        try:
-            print("Loading embedding model (first time)...")
-
-            # Force CPU as target device to avoid meta tensor transfer issues
-            model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
-
-            # Ensure model weights are loaded out of meta tensors
-            if any(p.device.type == "meta" for p in model.parameters()):
-                print("Model has meta parameters, trying to re-initialize...")
-                model = torch.nn.Module.to_empty(model)
-                model = model.to("cpu")
-
-            _embedding_model_cache = model
-            print("Embedding model loaded successfully!")
-            return model
-        except Exception as e:
-            print(f"Error loading embedding model: {e}")
-            print(
-                "Will continue without embedding model - some features may be limited"
-            )
-            return None
+    if _chroma_db_client_cache is None:
+        load_dotenv()
+        HOST = os.getenv("CHROMA_SERVER_HOST")
+        PORT = os.getenv("CHROMA_SERVER_HTTP_PORT")
+        _chroma_db_client_cache = chromadb.HttpClient(host=HOST, port=int(PORT))
     else:
-        print("Using cached embedding model")
-
-    return _embedding_model_cache
-
+        print("Using cached ChromaDB client")
+    return _chroma_db_client_cache
 
 def get_llm_model():
     """
@@ -63,6 +43,7 @@ def get_llm_model():
 
     if _llm_model_cache is None:
         try:
+            load_dotenv()
             api_key = os.getenv("GOOGLE_API_KEY")
             if not api_key:
                 print(
@@ -74,9 +55,6 @@ def get_llm_model():
             genai.configure(api_key=api_key)
             _llm_model_cache = genai.GenerativeModel("gemini-2.0-flash-lite")
             print("LLM model loaded successfully!")
-        except genai.errors.GoogleGenerativeAIError as e:
-            print(f"Error loading LLM model: {e}")
-            return False
         except Exception as e:
             print(f"Error loading LLM model: {e}")
             return False
@@ -91,264 +69,309 @@ class RAGCore:
 
     def __init__(self):
         """
-        Initializes the RAGCore with extracted data.
-
-        Args:
-            data (list[dict]): The parsed content from the PowerPoint.
+        Initializes the RAGCore.
         """
 
-        load_dotenv()
-        self.embedding_model = get_embedding_model()
         self.llm_model = get_llm_model()
 
-        #self.chroma_client = chromadb.PersistentClient(path="./chroma_db")
-        # Use in-memory client to avoid tenant issues
-        self.chroma_client = chromadb.Client()
+        self.chroma_client = get_chroma_db_client()
 
-        # Create embedding function for ChromaDB with proper device handling
-        try:
-            self.embedding_function = (
-                embedding_functions.SentenceTransformerEmbeddingFunction(
-                    model_name="all-MiniLM-L6-v2"
-                )
-            )
-        except Exception as e:
-            print(f"Error initializing embedding function: {e}")
-            # Fallback to a simpler embedding function
-            self.embedding_function = None
-
-        self.picture_collection = None
-        self.quiz_collection = None
-
-    def build_picture_collection(self, data):
+    def create_collection(self, data: Presentation):
         """
-        Builds the a vector database to retrieve data about images
-
-        The chunks are joined by slide number and then embedded into the vector database.
+        Builds the vector database from the Presentation object.
 
         Returns:
-            bool: True if the build was successful, False otherwise.
+            str: The collection id.
         """
-
-        data = self.prepare_chunks_from_pptx_for_picture_collection(data)
 
         all_texts = []
         all_ids = []
         all_metadatas = []
+        image_server = ImageServer()
 
-        for chunk in data:
-            all_texts.append(chunk["content"])
-            all_metadatas.append({"slide_number": chunk["slide_number"]})
-            all_ids.append(chunk["original_ids"])
+        for slide in data.slides:
 
-        if not all_texts:
-            print("No text content available to build the knowledge base.")
-            return False
+            all_slide_texts = []
+            all_slide_metadatas = []
+            for item in slide.items:
+                if item.type == Type.text:
+                    all_slide_texts.append(item.content)
+                    all_slide_metadatas.append(item.metadata())
+                elif item.type == Type.image:
+                    all_slide_texts.append(item.content)
+                    all_slide_metadatas.append(item.metadata())
 
-        # Creating and populating ChromaDB collection with embedding function
-        collection_name = f"picture_rag_{uuid.uuid4().hex}"
+            chunk_id = str(uuid.uuid4())
+            all_texts.append(" ".join(all_slide_texts))
+            all_ids.append(chunk_id)
+            
+            # Combine all metadata into a single dictionary for this slide
+            combined_metadata = {}
+            for i, metadata in enumerate(all_slide_metadatas):
+                item_num = i + 1
+                combined_metadata[f"item_{item_num}_type"] = metadata["type"]
+                combined_metadata[f"item_{item_num}_slide_number"] = metadata["slide_number"]
+                combined_metadata[f"item_{item_num}_order_number"] = metadata["order_number"]
+                
+                # Add additional fields for images
+                if metadata["type"] == "image":
+                    combined_metadata[f"item_{item_num}_image_extension"] = metadata["extension"]
+                    image_id = image_server.upload_image(metadata["image_bytes"])
+                    combined_metadata[f"item_{item_num}_image_id"] = image_id
 
-        if self.embedding_function:
-            self.picture_collection = self.chroma_client.create_collection(
-                name=collection_name, embedding_function=self.embedding_function
-            )
-        else:
-            # Fallback without embedding function
-            self.picture_collection = self.chroma_client.create_collection(
-                name=collection_name
-            )
+            combined_metadata["slide_number"] = slide.slide_number
+            combined_metadata["slide_id"] = slide.id
 
-        # Adding documents (ChromaDB handles embedding automatically)
-        self.picture_collection.add(
-            documents=all_texts, metadatas=all_metadatas, ids=all_ids
-        )
-
-        return True
-
-    def build_quiz_collection(self, data):
-        """
-        Builds the vector database from the text content.
-
-        This method extracts text, creates embeddings, and populates the
-        ChromaDB collection.
-
-        Chunks are created from the text content and image descriptions.
-
-        Returns:
-            bool: True if the build was successful, False otherwise.
-        """
-        prepared_data = self.prepare_chunks_from_pptx_for_quiz_collection(data)
-
-        all_texts = []
-        all_ids = []
-        all_metadatas = []
-
-        for chunk in prepared_data:
-            all_texts.append(chunk["content"])
-            metadata_list = chunk["metadata"]
-            image_metadata_list = chunk.get("image_metadata", [])
-            all_types = [item["type"] for item in metadata_list]
-
-            # Combine image metadata into a single string for ChromaDB
-            image_info = []
-            for img_meta in image_metadata_list:
-                image_info.append(
-                    f"image_id:{img_meta['image_id']},ext:{img_meta['image_extension']},bytes:{img_meta['image_bytes']}"
-                )
-
-            combined_metadata = {
-                "slide_number": metadata_list[0]["slide_number"],
-                "types": ",".join(all_types),
-                "id": metadata_list[0]["id"],
-                "image_metadata": ",".join(image_info) if image_info else "none",
-            }
             all_metadatas.append(combined_metadata)
-            all_ids.append(metadata_list[0]["id"])
+
 
         if not all_texts:
-            print("No text content available to build the knowledge base.")
-            return False
+            raise ValueError("No text content available to build the knowledge base.")
+        
+        collection_id = str(uuid.uuid4())
 
-        # Create and populate ChromaDB collection with embedding function
-        collection_name = f"ppt_rag_{uuid.uuid4().hex}"
+        self.chroma_client.create_collection(name=collection_id)
+        
 
-        if self.embedding_function:
-            self.quiz_collection = self.chroma_client.create_collection(
-                name=collection_name, embedding_function=self.embedding_function
-            )
-        else:
-            # Fallback without embedding function
-            self.quiz_collection = self.chroma_client.create_collection(
-                name=collection_name
-            )
+        self.chroma_client.get_collection(name=collection_id).add(
+            documents=all_texts,
+            metadatas=all_metadatas,
+            ids=all_ids
+        )   
 
-        # Adding documents (ChromaDB handles embedding automatically)
-        self.quiz_collection.add(
-            documents=all_texts, metadatas=all_metadatas, ids=all_ids
+        return collection_id
+
+    def remove_collection(self, collection_id: str):
+        """
+        This function is used to remove a collection.
+        """
+        self.chroma_client.delete_collection(name=collection_id)
+
+
+    def query_collection(self, query_text: str, collection_id: str, n_results: int = 1):
+        """
+        This function is used to get the context of collection.
+        """
+        retrieved_results = self.chroma_client.get_collection(name=collection_id).query(
+            query_texts=[query_text],
+            n_results=n_results,
+            include=["documents", "metadatas", "embeddings"],
         )
-        return True
 
-    def prepare_chunks_from_pptx_for_picture_collection(self, data):
+        return retrieved_results
+    
+
+    
+    def get_random_slide_context(self, collection_id: str):
         """
-        Aggregates content from parsed PPTX data into meaningful chunks.
-        Combines text per slide.
+        This function is used to get the context of a random slide.
+
+        returns:
+            dict: The context of a random slide.
+
         """
-        chunks = {}  # Dictionary to easily group by slide_number
+        collection_data = self.chroma_client.get_collection(name=collection_id).get()
+        
+        if collection_data is None or not collection_data:
+            raise ValueError(f"Collection data is None or empty for collection_id: {collection_id}")
+        
+        random_index = random.randint(0, len(collection_data["ids"]) - 1)
+        
+        # Ensure we get a single document string
+        document = collection_data["documents"][random_index]
+        if isinstance(document, list):
+            # If it's a list of characters, join them
+            document = "".join(document)
+        elif not isinstance(document, str):
+            # Convert to string if it's not already
+            document = str(document)
+        
+        # Create the result structure
+        result = {
+            "ids": [collection_data["ids"][random_index]],
+            "documents": [document],
+            "metadatas": [collection_data["metadatas"][random_index]],
+        }
+        
+        return result
+    
+    def get_random_slide_with_image(self, collection_id: str):
+        """
+        This function gets the context of a random image document
+        from a Chroma collection, retrying if necessary.
+        """
+        max_attempts = 10
+        attempts = 0
 
-        for item in data:
-            slide_num = item["slide_number"]
-            content_type = item["type"]
-            text_content = item.get("content", "")
+        try:
+            collection = self.chroma_client.get_collection(name=collection_id)
+            data = collection.get()
 
-            # Initialize the chunk entry
-            if slide_num not in chunks:
-                chunks[slide_num] = {
-                    "text_content": [],
-                    "image_descriptions": [],
-                    "ids": [],
+            if not data["documents"]:
+                print("No documents found in the collection.")
+                return None
+
+            while attempts < max_attempts:
+                idx = random.randint(0, len(data["documents"]) - 1)
+                metadata = data["metadatas"][idx]
+
+                # Check if any key ends with '_type' and its value is 'image'
+                if any(k.endswith("_type") and metadata[k] == "image" for k in metadata):
+                    # Ensure we get a single document string
+                    document = data["documents"][idx]
+                    if isinstance(document, list):
+                        # If it's a list of characters, join them
+                        document = "".join(document)
+                    elif not isinstance(document, str):
+                        # Convert to string if it's not already
+                        document = str(document)
+                    
+                    return {
+                        "metadatas": metadata,
+                        "documents": document,
+                        "ids": data["ids"][idx]
+                    }
+
+                attempts += 1
+                
+
+        except Exception as e:
+            print(f"Error getting random slide with image: {e}")
+
+        print("Failed to find a random image after max attempts.")
+        return None
+    
+    def get_context_from_slide_number(self, slide_number: int, collection_id: str):
+        """
+        This function is used to get the context of a slide by slide number.
+        """
+        collection_data = self.chroma_client.get_collection(name=collection_id).get()
+
+        for idx, metadata in enumerate(collection_data["metadatas"]):
+            if metadata["slide_number"] == slide_number:
+                # Ensure we get a single document string
+                document = collection_data["documents"][idx]
+                if isinstance(document, list):
+                    # If it's a list of characters, join them
+                    document = "".join(document)
+                elif not isinstance(document, str):
+                    # Convert to string if it's not already
+                    document = str(document)
+                
+                return {
+                    "metadatas": collection_data["metadatas"][idx],
+                    "documents": document,
+                    "ids": collection_data["ids"][idx]
                 }
 
-            if content_type == "text" and text_content:
-                chunks[slide_num]["text_content"].append(text_content.strip())
-            elif content_type == "image":
+        raise ValueError(f"No slide with number {slide_number} found")
+
+
+    def prompt_gemini(self, prompt: str, max_output_tokens: int = 200):
+        """
+        This function is used to prompt the Gemini model.
+        It handles quota exhaustion and retries.
+
+        Args:
+            prompt (str): The prompt to use for the Gemini model.
+            max_output_tokens (int): The maximum number of tokens to output.
+
+        Returns:
+            str: The response from the Gemini model.
+        """
+        max_retries = 3
+        delay = 1
+        quota_refill_delay = 60
+        generation_config = GenerationConfig(max_output_tokens=max_output_tokens)
+        for attempt in range(max_retries):
+            try:
+                response = self.llm_model.generate_content(
+                    contents=[prompt], generation_config=generation_config
+                )
+                return response.text
+            except Exception as e:
+                if "Resource has been exhausted" in str(e):
+                    print(
+                        f"Quota exhausted, waiting {quota_refill_delay} seconds for refill..."
+                    )
+                    time.sleep(quota_refill_delay)
+                else:
+                    print(f"Attempt {attempt + 1} failed: {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(delay)
+                else:
+                    raise
+
+    def prompt_gemini_with_image(
+        self,
+        prompt: str,
+        image_bytes: bytes,
+        image_format: str = "png",
+        max_output_tokens: int = 200,
+    ):
+        """
+        This function is used to prompt the Gemini model with an image.
+        It handles quota exhaustion and retries.
+
+        Args:
+            prompt (str): The prompt to use for the Gemini model.
+            image_bytes (bytes): The image to use for the Gemini model.
+            image_format (str): The format of the image.
+            max_output_tokens (int): The maximum number of tokens to output.
+
+        Returns:
+            str: The response from the Gemini model.
+        """
+        max_retries = 3
+        delay = 1
+        quota_refill_delay = 60
+        generation_config = GenerationConfig(max_output_tokens=max_output_tokens)
+
+        # Validate image format and convert if necessary
+        try:
+
+            # Open and validate the image
+            img = PILImage.open(io.BytesIO(image_bytes))
+
+            # Convert to RGB if necessary (some formats like PNG with transparency cause issues)
+            if img.mode in ("RGBA", "LA", "P"):
+                img = img.convert("RGB")
+
+            # Save as PNG to ensure compatibility
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format="PNG")
+            img_buffer.seek(0)
+            validated_image_bytes = img_buffer.getvalue()
+            validated_format = "png"
+
+        except Exception as e:
+            print(f"Error validating image: {e}")
+            # Use original image if validation fails
+            validated_image_bytes = image_bytes
+            validated_format = image_format
+
+        for attempt in range(max_retries):
+            try:
                 image_part = {
                     "inline_data": {
-                        "mime_type": f'image/{item["extension"]}',
-                        "data": item["content"],
+                        "mime_type": f"image/{validated_format}",
+                        "data": validated_image_bytes,
                     }
                 }
-                llm_response = self.llm_model.generate_content(
-                    contents=[
-                        image_part,
-                        "\n",
-                        "Describe the image max output tokens 100.",
-                    ],
-                    generation_config=GenerationConfig(max_output_tokens=100),
+                response = self.llm_model.generate_content(
+                    contents=[image_part, "\n", prompt],
+                    generation_config=generation_config,
                 )
-                chunks[slide_num]["image_descriptions"].append(llm_response.text)
-
-            chunks[slide_num]["ids"].append(item["id"])
-
-        final_chunks = []
-        for slide_num, val in chunks.items():
-            combined_text = []
-            if val["text_content"]:
-                combined_text.append("\n".join(val["text_content"]))
-            if val["image_descriptions"]:
-                combined_text.append("\n".join(val["image_descriptions"]))
-
-            full_chunk_text = "\n".join(combined_text).strip()
-
-            if full_chunk_text:
-                final_chunks.append(
-                    {
-                        "content": full_chunk_text,
-                        "original_ids": ",".join(val["ids"]),
-                        "slide_number": slide_num,
-                    }
-                )
-        return final_chunks
-
-    def prepare_chunks_from_pptx_for_quiz_collection(self, data):
-        """
-        Aggregates content from parsed PPTX data into meaningful chunks.
-        Combines text and image descriptions per slide.
-        """
-        chunks = {}  # Dictionary to easily group by slide_number
-
-        for item in data:
-            slide_num = item["slide_number"]
-
-            if item["type"] == "text":
-                text_content = item["content"]
-                image_metadata = None  # No image metadata for text items
-            elif item["type"] == "image":
-                text_content = item["description"]
-                # Encode image bytes as base64 for storage
-                import base64
-
-                image_bytes_encoded = base64.b64encode(item["content"]).decode("utf-8")
-                image_metadata = {
-                    "image_bytes": image_bytes_encoded,
-                    "image_extension": item["extension"],
-                    "image_id": item["id"],
-                }
-
-            metadata = {
-                "slide_number": slide_num,
-                "type": item["type"],
-                "id": item["id"],
-            }
-
-            # Initialize the chunk entry
-            if slide_num not in chunks:
-                chunks[slide_num] = {
-                    "text_content": [],
-                    "metadata": [],
-                    "image_metadata": [],
-                }
-
-            chunks[slide_num]["text_content"].append(text_content.strip())
-            chunks[slide_num]["metadata"].append(metadata)
-            if image_metadata is not None:
-                chunks[slide_num]["image_metadata"].append(image_metadata)
-
-        final_chunks = []
-        for slide_num, val in chunks.items():
-            combined_text = []
-            if val["text_content"]:
-                combined_text.append("\n".join(val["text_content"]))
-
-            metadata = val["metadata"]
-            image_metadata = val["image_metadata"]
-
-            full_chunk_text = "\n".join(combined_text).strip()
-            if full_chunk_text:
-                final_chunks.append(
-                    {
-                        "content": full_chunk_text,
-                        "metadata": metadata,
-                        "image_metadata": image_metadata,
-                    }
-                )
-        return final_chunks
+                return response.text
+            except Exception as e:
+                if "Resource has been exhausted" in str(e):
+                    print(
+                        f"Quota exhausted, waiting {quota_refill_delay} seconds for refill..."
+                    )
+                    time.sleep(quota_refill_delay)
+                else:
+                    print(f"Attempt {attempt + 1} failed: {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(delay)
+                else:
+                    raise

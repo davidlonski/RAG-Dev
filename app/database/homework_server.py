@@ -155,9 +155,11 @@ class HomeworkServer:
                 ),
             )
 
+            assignment_id = cursor.lastrowid
+
             insert_question_sql = (
-                "INSERT INTO questions (type, question, answer, context, image_bytes, image_extension, created_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                "INSERT INTO questions (assignment_id, type, question, answer, context, image_bytes, image_extension, created_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
             )
 
 
@@ -178,6 +180,7 @@ class HomeworkServer:
                 cursor.execute(
                     insert_question_sql,
                     (
+                        assignment_id,
                         qtype,
                         qtext,
                         ans,
@@ -189,7 +192,7 @@ class HomeworkServer:
                 )
 
             mydb.commit()
-            return cursor.lastrowid
+            return assignment_id
         except Exception as exc:
             try:
                 if mydb:
@@ -255,7 +258,7 @@ class HomeworkServer:
                         "created_at": q["created_at"].isoformat() if q.get("created_at") else None,
                     }
                     if include_image_bytes and q.get("image_bytes") is not None:
-                        qdict["image_bytes"] = base64.b64encode(q["image_bytes"]).decode("utf-8")
+                        qdict["image_bytes"] = None #base64.b64encode(q["image_bytes"]).decode("utf-8")
                     questions.append(qdict)
                 assignment["questions"] = questions
 
@@ -383,4 +386,174 @@ class HomeworkServer:
             except Exception:
                 pass
             print(f"❌ Unexpected error during status update: {exc}")
+            return False
+
+    # -------------------------
+    # Submissions CRUD
+    # -------------------------
+
+    def get_or_create_active_submission(self, student_id: str, assignment_id: int):
+        """Return the in-progress submission for a student/assignment, or create one."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return None
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status "
+                "FROM submissions WHERE student_id = %s AND assignment_id = %s AND status = 'in_progress' ORDER BY id DESC LIMIT 1",
+                (student_id, assignment_id),
+            )
+            row = cursor.fetchone()
+            if row:
+                cursor.close()
+                return row
+
+            # Create new submission
+            cursor.execute(
+                "INSERT INTO submissions (student_id, assignment_id, started_at, status) VALUES (%s, %s, %s, 'in_progress')",
+                (student_id, assignment_id, datetime.now().strftime("%Y-%m-%d %H:%M")),
+            )
+            mydb.commit()
+            sub_id = cursor.lastrowid
+            cursor.close()
+            return {
+                "id": sub_id,
+                "student_id": student_id,
+                "assignment_id": assignment_id,
+                "started_at": datetime.now().isoformat(timespec='minutes'),
+                "completed_at": None,
+                "overall_score": None,
+                "summary": None,
+                "status": "in_progress",
+            }
+        except Exception as exc:
+            print(f"❌ Unexpected error during submission create: {exc}")
+            return None
+
+    def get_submission(self, submission_id: int):
+        """Fetch a submission and its answers grouped by question."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return None
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status FROM submissions WHERE id = %s",
+                (submission_id,),
+            )
+            sub = cursor.fetchone()
+            if not sub:
+                cursor.close()
+                return None
+
+            cursor.execute(
+                "SELECT id, submission_id, question_id, attempt_number, student_answer, grade, feedback, created_at "
+                "FROM submission_answers WHERE submission_id = %s ORDER BY question_id ASC, attempt_number ASC",
+                (submission_id,),
+            )
+            rows = cursor.fetchall()
+            cursor.close()
+
+            answers_by_q = {}
+            for r in rows:
+                qid = r["question_id"] if isinstance(r, dict) else r[2]
+                if qid not in answers_by_q:
+                    answers_by_q[qid] = []
+                answers_by_q[qid].append(r)
+            sub["answers_by_question"] = answers_by_q
+            return sub
+        except Exception as exc:
+            print(f"❌ Unexpected error during submission fetch: {exc}")
+            return None
+
+    def get_submission_answers(self, submission_id: int):
+        """Return a dict question_id -> list of attempts for a submission."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return {}
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id, submission_id, question_id, attempt_number, student_answer, grade, feedback, created_at "
+                "FROM submission_answers WHERE submission_id = %s ORDER BY question_id ASC, attempt_number ASC",
+                (submission_id,),
+            )
+            rows = cursor.fetchall()
+            cursor.close()
+            answers_by_q = {}
+            for r in rows:
+                qid = r["question_id"]
+                answers_by_q.setdefault(qid, []).append(r)
+            return answers_by_q
+        except Exception as exc:
+            print(f"❌ Unexpected error during submission answers fetch: {exc}")
+            return {}
+
+    def record_answer_attempt(
+        self,
+        submission_id: int,
+        question_id: int,
+        attempt_number: int,
+        student_answer: str,
+        grade: int,
+        feedback: str,
+    ) -> bool:
+        """Insert a graded answer attempt for a submission/question."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return False
+            cursor = mydb.cursor()
+            cursor.execute(
+                "INSERT INTO submission_answers (submission_id, question_id, attempt_number, student_answer, grade, feedback, created_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (
+                    submission_id,
+                    question_id,
+                    attempt_number,
+                    student_answer,
+                    grade,
+                    feedback,
+                    datetime.now().strftime("%Y-%m-%d %H:%M"),
+                ),
+            )
+            mydb.commit()
+            cursor.close()
+            return True
+        except Exception as exc:
+            try:
+                if mydb:
+                    mydb.rollback()
+            except Exception:
+                pass
+            print(f"❌ Unexpected error during answer insert: {exc}")
+            return False
+
+    def mark_submission_completed(self, submission_id: int, overall_score: float, summary: str) -> bool:
+        """Mark a submission as completed with overall score and summary."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return False
+            cursor = mydb.cursor()
+            cursor.execute(
+                "UPDATE submissions SET status='completed', completed_at=%s, overall_score=%s, summary=%s WHERE id=%s",
+                (datetime.now().strftime("%Y-%m-%d %H:%M"), overall_score, summary, submission_id),
+            )
+            mydb.commit()
+            cursor.close()
+            return True
+        except Exception as exc:
+            try:
+                if mydb:
+                    mydb.rollback()
+            except Exception:
+                pass
+            print(f"❌ Unexpected error during submission completion: {exc}")
             return False
