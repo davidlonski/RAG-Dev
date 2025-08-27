@@ -102,9 +102,9 @@ app/
 │   ├── 1_Teacher_Portal.py   # Teacher dashboard
 │   └── 2_Student_Portal.py   # Student portal
 ├── database/
-│   ├── user_server.py        # User CRUD operations
-│   ├── rag_quizzer_server.py # RAG quizzer CRUD operations
-│   ├── homework_server.py    # Updated with user integration
+│   ├── user_db.py            # User CRUD operations
+│   ├── rag_quizzer_db.py     # RAG quizzer CRUD operations
+│   ├── homework_db.py        # Updated with user integration
 │   └── migrate_rag_quizzer.py # Database migration script
 └── test_rag_quizzer.py       # Test script for RAG quizzer operations
 ```

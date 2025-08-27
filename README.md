@@ -108,10 +108,10 @@ RAG-Dev/
 │   │   ├── 1_Teacher_Portal.py   # Teacher dashboard
 │   │   └── 2_Student_Portal.py   # Student portal
 │   ├── database/
-│   │   ├── user_server.py        # User CRUD operations
-│   │   ├── rag_quizzer_server.py # RAG quizzer CRUD operations
-│   │   ├── homework_server.py    # Homework management
-│   │   ├── image_server.py       # Image storage
+│   │   ├── user_db.py            # User CRUD operations
+│   │   ├── rag_quizzer_db.py     # RAG quizzer CRUD operations
+│   │   ├── homework_db.py        # Homework management
+│   │   ├── image_db.py           # Image storage
 │   │   └── migrate_rag_quizzer.py # Database migration
 │   ├── pptx_rag_quizzer/
 │   │   ├── rag_core.py           # Core RAG functionality

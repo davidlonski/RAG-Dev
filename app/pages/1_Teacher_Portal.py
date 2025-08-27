@@ -14,11 +14,11 @@ sys.path.append(os.path.dirname(__file__))
 from pptx_rag_quizzer.file_parser import parse_powerpoint
 from pptx_rag_quizzer.rag_core import RAGCore
 from pptx_rag_quizzer.quiz_master import QuizMaster
-from database.image_server import ImageServer
+from database.image_db import ImageServer
 from pptx_rag_quizzer.image_magic import ImageMagic
-from database.homework_server import HomeworkServer
-from database.user_server import UserServer
-from database.rag_quizzer_server import RAGQuizzerServer
+from database.homework_db import HomeworkServer
+from database.user_db import UserServer
+from database.rag_quizzer_db import RAGQuizzerServer
 
 # Page configuration
 st.set_page_config(

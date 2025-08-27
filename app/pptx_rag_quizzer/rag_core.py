@@ -9,7 +9,7 @@ from pptx_rag_quizzer.presentation_model import Presentation, Type
 import io
 import time
 from PIL import Image as PILImage
-from database.image_server import ImageServer
+from database.image_db import ImageServer
 
 load_dotenv()
 
