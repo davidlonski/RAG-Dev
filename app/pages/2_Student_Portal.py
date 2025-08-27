@@ -84,6 +84,9 @@ def grade_and_save(answers: Dict[int, str], finalize: bool = False):
     questions = assignment.get("questions", [])
     graded_results: List[Dict] = []
 
+    # Create mapping from question ID to sequential number
+    question_id_to_number = {q["id"]: i + 1 for i, q in enumerate(questions)}
+
     for q in questions:
         qid = q["id"]
         student_answer = answers.get(qid, "").strip()
@@ -94,14 +97,14 @@ def grade_and_save(answers: Dict[int, str], finalize: bool = False):
             continue
         attempt_number = used + 1
         grade, feedback = ss.quiz_master.grade_question(q, student_answer)
-        graded_results.append({"question_id": qid, "attempt": attempt_number, "grade": grade, "feedback": feedback})
+        graded_results.append({"question_id": qid, "question_number": question_id_to_number[qid], "attempt": attempt_number, "grade": grade, "feedback": feedback})
         ok = ss.homework_server.record_answer_attempt(submission_id=submission["id"], question_id=qid, attempt_number=attempt_number, student_answer=student_answer, grade=grade, feedback=feedback)
         if ok:
             ss.attempts_used[qid] = attempt_number
 
     if graded_results:
         for r in graded_results:
-            st.write(f"Q{r['question_id']} attempt {r['attempt']} → grade {r['grade']}: {r['feedback']}")
+            st.write(f"Q{r['question_number']} attempt {r['attempt']} → grade {r['grade']}: {r['feedback']}")
         st.success("Saved and graded current answers.")
     else:
         st.info("No new answers to grade.")
@@ -153,9 +156,9 @@ def take_assignment():
     image_lookup = {item['id']: item for item in image_qs}
 
     # Show questions
-    for q in assignment.get("questions", []):
+    for question_index, q in enumerate(assignment.get("questions", []), 1):
         qid = q["id"]
-        st.subheader(f"Question {qid}")
+        st.subheader(f"Question {question_index}")
         st.write(q["question"])
         if q.get("type") == "image":
             st.caption("This is an image-based question. Answer based on the image context.")

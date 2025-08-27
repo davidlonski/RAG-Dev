@@ -23,3 +23,7 @@ nosetests.xml
 coverage.xml
 *.cover
 *.log
+
+# Temporary files
+github-summary.md
+*.session.sql
