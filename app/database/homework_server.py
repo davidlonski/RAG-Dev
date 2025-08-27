@@ -86,6 +86,7 @@ class HomeworkServer:
         assignment: dict shaped like the session-state homework assignment, e.g.:
           {
             'collection_id': str,
+            'teacher_id': int,  # Required: ID of the teacher creating the assignment
             'questions': List[Dict[str, Any]]
             [
                 {
@@ -116,8 +117,14 @@ class HomeworkServer:
             created_at = datetime.now().strftime("%Y-%m-%d %H:%M")
             name = assignment.get("name")
             collection_id = assignment.get("collection_id")
+            teacher_id = assignment.get("teacher_id")
             status = assignment.get("status", "active")
             questions: List[Dict[str, Any]] = assignment.get("questions", [])
+            
+            # Validate teacher_id is provided
+            if not teacher_id:
+                print("❌ teacher_id is required for assignment creation")
+                return None
             
             for q in questions:
                 qtype = q.get("type")
@@ -139,14 +146,15 @@ class HomeworkServer:
             
             cursor = mydb.cursor()
             insert_assignment_sql = (
-                "INSERT INTO assignments (name, collection_id, created_at, num_questions, num_text_questions, num_image_questions, status) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                "INSERT INTO assignments (name, collection_id, teacher_id, created_at, num_questions, num_text_questions, num_image_questions, status) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
             )
             cursor.execute(
                 insert_assignment_sql,
                 (
                     name,
                     collection_id,
+                    teacher_id,
                     created_at,
                     num_questions,
                     num_text_questions,
@@ -217,7 +225,7 @@ class HomeworkServer:
                 return None
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
-                "SELECT id, name, collection_id, created_at, num_questions, "
+                "SELECT id, name, collection_id, teacher_id, created_at, num_questions, "
                 "num_text_questions, num_image_questions, status FROM assignments WHERE id = %s",
                 (assignment_id,),
             )
@@ -229,6 +237,7 @@ class HomeworkServer:
                 "id": row["id"],
                 "name": row["name"],
                 "collection_id": row.get("collection_id"),
+                "teacher_id": row.get("teacher_id"),
                 "created_at": row["created_at"].isoformat() if row.get("created_at") else None,
                 "num_questions": row["num_questions"],
                 "num_text_questions": row["num_text_questions"],
@@ -277,7 +286,7 @@ class HomeworkServer:
                 return []
             cursor = mydb.cursor(dictionary=True)
             sql = (
-                "SELECT id, name, collection_id, created_at, num_questions, "
+                "SELECT id, name, collection_id, teacher_id, created_at, num_questions, "
                 "num_text_questions, num_image_questions, status FROM assignments ORDER BY created_at DESC"
             )
             if limit and isinstance(limit, int) and limit > 0:
@@ -294,6 +303,7 @@ class HomeworkServer:
                         "id": row["id"],
                         "name": row["name"],
                         "collection_id": row.get("collection_id"),
+                        "teacher_id": row.get("teacher_id"),
                         "created_at": row["created_at"].isoformat() if row.get("created_at") else None,
                         "num_questions": row["num_questions"],
                         "num_text_questions": row["num_text_questions"],
@@ -392,7 +402,7 @@ class HomeworkServer:
     # Submissions CRUD
     # -------------------------
 
-    def get_or_create_active_submission(self, student_id: str, assignment_id: int):
+    def get_or_create_active_submission(self, student_id: int, assignment_id: int):
         """Return the in-progress submission for a student/assignment, or create one."""
         try:
             mydb = self.get_connection()
@@ -557,3 +567,87 @@ class HomeworkServer:
                 pass
             print(f"❌ Unexpected error during submission completion: {exc}")
             return False
+
+    def get_assignments_by_teacher(self, teacher_id: int, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get assignments created by a specific teacher."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return []
+            cursor = mydb.cursor(dictionary=True)
+            sql = (
+                "SELECT id, name, collection_id, teacher_id, created_at, num_questions, "
+                "num_text_questions, num_image_questions, status FROM assignments "
+                "WHERE teacher_id = %s ORDER BY created_at DESC"
+            )
+            params = [teacher_id]
+            
+            if limit and isinstance(limit, int) and limit > 0:
+                sql += " LIMIT %s"
+                params.append(limit)
+
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+            cursor.close()
+            
+            result = []
+            for row in rows:
+                result.append({
+                    "id": row["id"],
+                    "name": row["name"],
+                    "collection_id": row.get("collection_id"),
+                    "teacher_id": row.get("teacher_id"),
+                    "created_at": row["created_at"].isoformat() if row.get("created_at") else None,
+                    "num_questions": row["num_questions"],
+                    "num_text_questions": row["num_text_questions"],
+                    "num_image_questions": row["num_image_questions"],
+                    "status": row["status"],
+                })
+            return result
+        except Exception as exc:
+            print(f"❌ Unexpected error during teacher assignments fetch: {exc}")
+            return []
+
+    def get_submissions_by_student(self, student_id: int, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get submissions by a specific student."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return []
+            cursor = mydb.cursor(dictionary=True)
+            sql = (
+                "SELECT s.id, s.student_id, s.assignment_id, s.started_at, s.completed_at, "
+                "s.overall_score, s.summary, s.status, a.name as assignment_name "
+                "FROM submissions s "
+                "JOIN assignments a ON s.assignment_id = a.id "
+                "WHERE s.student_id = %s ORDER BY s.started_at DESC"
+            )
+            params = [student_id]
+            
+            if limit and isinstance(limit, int) and limit > 0:
+                sql += " LIMIT %s"
+                params.append(limit)
+
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+            cursor.close()
+            
+            result = []
+            for row in rows:
+                result.append({
+                    "id": row["id"],
+                    "student_id": row["student_id"],
+                    "assignment_id": row["assignment_id"],
+                    "assignment_name": row["assignment_name"],
+                    "started_at": row["started_at"].isoformat() if row.get("started_at") else None,
+                    "completed_at": row["completed_at"].isoformat() if row.get("completed_at") else None,
+                    "overall_score": row["overall_score"],
+                    "summary": row["summary"],
+                    "status": row["status"],
+                })
+            return result
+        except Exception as exc:
+            print(f"❌ Unexpected error during student submissions fetch: {exc}")
+            return []

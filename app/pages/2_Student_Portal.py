@@ -9,6 +9,7 @@ from datetime import datetime
 sys.path.append(os.path.dirname(__file__))
 
 from database.homework_server import HomeworkServer
+from database.user_server import UserServer
 from pptx_rag_quizzer.quiz_master import QuizMaster
 from pptx_rag_quizzer.rag_core import RAGCore
 
@@ -18,10 +19,12 @@ st.set_page_config(page_title="Student Portal", page_icon="🧑‍🎓", layout=
 ss = st.session_state
 
 # Initialize session state
-if "student_id" not in ss:
-    ss.student_id = "student_001"  # In real app, get from auth
 if "homework_server" not in ss:
     ss.homework_server = HomeworkServer()
+if "user_server" not in ss:
+    ss.user_server = UserServer()
+if "current_user" not in ss:
+    ss.current_user = None
 if "rag_core" not in ss:
     ss.rag_core = RAGCore()
 if "quiz_master" not in ss:
@@ -42,7 +45,7 @@ def load_assignment(assignment_id: int):
     assignment = ss.homework_server.get_assignment(assignment_id, include_questions=True, include_image_bytes=False)
     ss.current_assignment = assignment
     # Get or create active submission
-    submission = ss.homework_server.get_or_create_active_submission(ss.student_id, assignment_id)
+    submission = ss.homework_server.get_or_create_active_submission(ss.current_user['id'], assignment_id)
     ss.submission = submission
     # Load existing attempts to compute attempts used
     answers = ss.homework_server.get_submission_answers(submission["id"]) if submission else {}
@@ -117,13 +120,13 @@ def grade_and_save(answers: Dict[int, str], finalize: bool = False):
         percent = round(avg * 100, 1)
         # Basic summary prompt
         summary_prompt = f"""
-Generate a concise summary of the student's performance in one short paragraph, including strengths and weaknesses.
-Use this context:
-- Assignment name: {assignment.get('name')}
-- Questions: {num_questions}
-- Total raw points: {latest_sum} (out of {num_questions*max_per_q})
-Format as plain text.
-"""
+                            Generate a concise summary of the student's performance in one short paragraph, including strengths and weaknesses.
+                            Use this context:
+                            - Assignment name: {assignment.get('name')}
+                            - Questions: {num_questions}
+                            - Total raw points: {latest_sum} (out of {num_questions*max_per_q})
+                            Format as plain text.
+                        """
         try:
             summary = ss.rag_core.prompt_gemini(summary_prompt)
         except Exception:
@@ -204,14 +207,35 @@ def take_assignment():
             st.rerun()
 
 
+# Check if user is logged in and is a student
+if not ss.current_user:
+    st.error("❌ Please login first.")
+    st.info("Redirecting to login page...")
+    st.switch_page("main.py")
+    st.stop()
+
+if ss.current_user['role'] != 'student':
+    st.error("❌ Access denied. This page is for students only.")
+    st.info("Redirecting to teacher portal...")
+    st.switch_page("pages/1_Teacher_Portal.py")
+    st.stop()
+
 st.title("🧑‍🎓 Student Portal")
+st.write(f"Welcome, {ss.current_user['first_name']} {ss.current_user['last_name']}!")
 
 with st.sidebar:
-    st.write(f"Student: {ss.student_id}")
+    st.write(f"**Student:** {ss.current_user['first_name']} {ss.current_user['last_name']}")
+    st.write(f"**Username:** {ss.current_user['username']}")
+    
     choice = st.radio("Navigate", ["assignments", "take"], index=0 if ss.page == "assignments" else 1)
     if choice != ss.page:
         ss.page = choice
         st.rerun()
+    
+    # Logout button
+    if st.button("🚪 Logout"):
+        ss.current_user = None
+        st.switch_page("main.py")
 
 if ss.page == "assignments":
     view_assignments()
