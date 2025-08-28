@@ -402,6 +402,46 @@ class HomeworkServer:
     # Submissions CRUD
     # -------------------------
 
+    def get_completed_submission(self, student_id: int, assignment_id: int):
+        """Return the completed submission for a student/assignment if it exists."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return None
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status "
+                "FROM submissions WHERE student_id = %s AND assignment_id = %s AND status = 'completed' ORDER BY id DESC LIMIT 1",
+                (student_id, assignment_id),
+            )
+            row = cursor.fetchone()
+            cursor.close()
+            return row
+        except Exception as exc:
+            print(f"❌ Unexpected error during completed submission fetch: {exc}")
+            return None
+
+    def get_active_submission(self, student_id: int, assignment_id: int):
+        """Return the active (in-progress) submission for a student/assignment if it exists."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return None
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status "
+                "FROM submissions WHERE student_id = %s AND assignment_id = %s AND status = 'in_progress' ORDER BY id DESC LIMIT 1",
+                (student_id, assignment_id),
+            )
+            row = cursor.fetchone()
+            cursor.close()
+            return row
+        except Exception as exc:
+            print(f"❌ Unexpected error during active submission fetch: {exc}")
+            return None
+
     def get_or_create_active_submission(self, student_id: int, assignment_id: int):
         """Return the in-progress submission for a student/assignment, or create one."""
         try:

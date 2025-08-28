@@ -27,3 +27,4 @@ coverage.xml
 # Temporary files
 github-summary.md
 *.session.sql
+local-hwdb.session.sql

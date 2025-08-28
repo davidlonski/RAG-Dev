@@ -1,5 +1,69 @@
 # Changelog
 
+## [2025-08-26] - Student Assignment Flow Restructure & Documentation Standards
+
+### 🎯 Major Features Added
+
+#### **Student Assignment Flow Restructure**
+- **Attempt-Based System**: Implemented proper first and second attempt tracking
+- **Dynamic Button States**: Buttons change based on attempt progress and completion status
+- **Completed Assignment Viewing**: Students can view finished assignments with full results
+- **Assignment Status Tracking**: Real-time status display (Not Started, In Progress, Completed)
+
+#### **Enhanced User Experience**
+- **First Attempt Flow**: Only "Save & Grade" and "Back" buttons during initial attempt
+- **Second Attempt Flow**: "Save & Grade", "Submit Final", and "Back" buttons after first attempt
+- **Completion Flow**: Only "Back" button with comprehensive results display
+- **Attempt History**: Students can view all attempts with grades and AI feedback
+
+### 🔧 Technical Improvements
+
+#### **Database Enhancements**
+- **New Functions**: Added `get_completed_submission()` and `get_active_submission()`
+- **Status Tracking**: Proper submission status management (in_progress, completed)
+- **Attempt Validation**: Ensures all questions are attempted before final submission
+
+#### **Code Quality**
+- **State Management**: Proper session state handling for attempt tracking
+- **Error Handling**: Comprehensive validation and user feedback
+- **Database Integration**: Efficient queries for submission status checking
+
+#### **Documentation Standards**
+- **Commit Message Standards**: Added comprehensive commit message guidelines to cursor rules
+- **GitHub Summary System**: Created `github-summary.md` for tracking changes
+- **Changelog Integration**: Automated changelog updates for all future changes
+
+### 📁 Files Modified
+
+- **`app/pages/2_Student_Portal.py`**: Complete restructure of assignment taking flow
+- **`app/database/homework_db.py`**: Added new database functions for submission tracking
+- **`.cursor/rules/general.mdc`**: Added commit message and changelog standards
+- **`.gitignore`**: Added `github-summary.md` to temporary files section
+- **`github-summary.md`**: Created for change tracking (gitignored)
+- **`CHANGELOG.md`**: Updated with current changes
+
+### 🎯 User Impact
+
+- **Intuitive Flow**: Students follow clear attempt-based progression
+- **Better Feedback**: Real-time grading and attempt history display
+- **Status Awareness**: Clear indication of assignment progress and completion
+- **Complete Tracking**: All attempts, grades, and feedback properly stored for teacher review
+
+### 🔄 Configuration Updates
+
+- **Cursor Rules**: Enhanced with commit message and changelog requirements
+- **File Management**: Temporary files properly excluded from version control
+- **Change Tracking**: Automated documentation system implemented
+
+### 📊 Data Tracking
+
+- **Complete Attempt History**: Both attempts stored with grades and AI feedback
+- **Student Information**: Full tracking of who took each assignment
+- **Submission Status**: Proper completion marking and status management
+- **Teacher Review**: All data available for comprehensive teacher analysis
+
+---
+
 ## [2024-12-19] - RAG Quizzer Persistence & User Management System
 
 ### 🎯 Major Features Added

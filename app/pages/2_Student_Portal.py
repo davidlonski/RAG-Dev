@@ -44,12 +44,21 @@ if "attempts_used" not in ss:
 def load_assignment(assignment_id: int):
     assignment = ss.homework_server.get_assignment(assignment_id, include_questions=True, include_image_bytes=False)
     ss.current_assignment = assignment
+    
+    # Check if there's already a completed submission for this student/assignment
+    completed_submission = ss.homework_server.get_completed_submission(ss.current_user['id'], assignment_id)
+    if completed_submission:
+        ss.submission = completed_submission
+        return
+    
     # Get or create active submission
     submission = ss.homework_server.get_or_create_active_submission(ss.current_user['id'], assignment_id)
     ss.submission = submission
+    
     # Load existing attempts to compute attempts used
     answers = ss.homework_server.get_submission_answers(submission["id"]) if submission else {}
     ss.attempts_used = {qid: len(attempts) for qid, attempts in answers.items()}
+    
     # Pre-fill drafts with last attempt answer if exists
     ss.answers_draft = {}
     for q in assignment.get("questions", []):
@@ -64,14 +73,82 @@ def view_assignments():
     if not assignments:
         st.info("No assignments available yet.")
         return
+    
     for a in assignments:
+        # Check if student has a completed submission for this assignment
+        completed_submission = ss.homework_server.get_completed_submission(ss.current_user['id'], a['id'])
+        active_submission = ss.homework_server.get_active_submission(ss.current_user['id'], a['id'])
+        
+        if completed_submission:
+            # Assignment completed
+            status_text = f"✅ COMPLETED - Score: {completed_submission['overall_score']}%"
+            button_text = "📊 View Results"
+        elif active_submission:
+            # Assignment in progress
+            status_text = "🔄 IN PROGRESS"
+            button_text = "📝 Continue Assignment"
+        else:
+            # Assignment not started
+            status_text = "📋 NOT STARTED"
+            button_text = "🚀 Start Assignment"
+        
         with st.expander(f"{a['name']} — {a['num_questions']} questions"):
-            st.write(f"Created: {a.get('created_at','')}")
-            st.write(f"Text: {a['num_text_questions']}, Image: {a['num_image_questions']}")
-            if st.button("Start / Continue", key=f"start_{a['id']}"):
+            st.write(f"**Status:** {status_text}")
+            st.write(f"**Created:** {a.get('created_at','')}")
+            st.write(f"**Questions:** Text: {a['num_text_questions']}, Image: {a['num_image_questions']}")
+            
+            if st.button(button_text, key=f"start_{a['id']}"):
                 load_assignment(a["id"]) 
                 ss.page = "take"
                 st.rerun()
+
+
+def display_completed_assignment(assignment, submission):
+    """Display a completed assignment with all attempts and grades."""
+    st.header(f"📝 {assignment['name']} - COMPLETED")
+    st.caption(f"Submission ID: {submission['id']} — Completed: {submission['completed_at']}")
+    st.success(f"🎉 Final Score: {submission['overall_score']}%")
+    
+    if submission.get('summary'):
+        st.info(f"**Summary:** {submission['summary']}")
+    
+    # Load all answers
+    answers_by_q = ss.homework_server.get_submission_answers(submission['id'])
+    
+    # Load image bytes for questions
+    image_qs = ss.homework_server.get_assignment_questions(assignment['id'], include_image_bytes=True)
+    image_lookup = {item['id']: item for item in image_qs}
+    
+    # Show all questions with their attempts
+    for question_index, q in enumerate(assignment.get("questions", []), 1):
+        qid = q["id"]
+        st.subheader(f"Question {question_index}")
+        st.write(q["question"])
+        
+        if q.get("type") == "image":
+            st.caption("This was an image-based question.")
+            img_info = image_lookup.get(qid)
+            img_b64 = img_info.get("image_bytes") if img_info else None
+            if img_b64:
+                try:
+                    st.image(base64.b64decode(img_b64), use_container_width=True)
+                except Exception:
+                    st.warning("Unable to display image preview.")
+        
+        attempts = answers_by_q.get(qid, [])
+        if attempts:
+            for i, attempt in enumerate(attempts, 1):
+                with st.expander(f"Attempt {i} - Grade: {attempt['grade']}/2"):
+                    st.write(f"**Your answer:** {attempt['student_answer']}")
+                    if attempt['feedback']:
+                        st.info(f"**Feedback:** {attempt['feedback']}")
+        else:
+            st.warning("No attempts recorded for this question.")
+    
+    # Only show back button for completed assignments
+    if st.button("← Back to Assignments"):
+        ss.page = "assignments"
+        st.rerun()
 
 
 def grade_and_save(answers: Dict[int, str], finalize: bool = False):
@@ -87,6 +164,7 @@ def grade_and_save(answers: Dict[int, str], finalize: bool = False):
     # Create mapping from question ID to sequential number
     question_id_to_number = {q["id"]: i + 1 for i, q in enumerate(questions)}
 
+    # Grade only questions that have answers and haven't reached max attempts
     for q in questions:
         qid = q["id"]
         student_answer = answers.get(qid, "").strip()
@@ -103,15 +181,24 @@ def grade_and_save(answers: Dict[int, str], finalize: bool = False):
             ss.attempts_used[qid] = attempt_number
 
     if graded_results:
+        st.success("✅ Answers saved and graded successfully!")
         for r in graded_results:
-            st.write(f"Q{r['question_number']} attempt {r['attempt']} → grade {r['grade']}: {r['feedback']}")
-        st.success("Saved and graded current answers.")
+            st.write(f"**Q{r['question_number']} (Attempt {r['attempt']})** - Grade: {r['grade']}/2")
+            st.info(f"Feedback: {r['feedback']}")
     else:
         st.info("No new answers to grade.")
 
     if finalize:
-        # Compute overall score from latest attempts of all questions
+        # Check if all questions have been attempted at least once
         answers_map = ss.homework_server.get_submission_answers(submission["id"]) or {}
+        total_questions = len(questions)
+        questions_attempted = sum(1 for q in questions if answers_map.get(q["id"]))
+        
+        if questions_attempted < total_questions:
+            st.error(f"❌ Please attempt all {total_questions} questions before submitting final.")
+            return
+        
+        # Compute overall score from latest attempts of all questions
         num_questions = max(1, len(questions))
         latest_sum = 0
         for q in questions:
@@ -121,22 +208,28 @@ def grade_and_save(answers: Dict[int, str], finalize: bool = False):
         max_per_q = 2
         avg = latest_sum / (num_questions * max_per_q)
         percent = round(avg * 100, 1)
-        # Basic summary prompt
+        
+        # Generate summary
         summary_prompt = f"""
-                            Generate a concise summary of the student's performance in one short paragraph, including strengths and weaknesses.
-                            Use this context:
-                            - Assignment name: {assignment.get('name')}
-                            - Questions: {num_questions}
-                            - Total raw points: {latest_sum} (out of {num_questions*max_per_q})
-                            Format as plain text.
-                        """
+        Generate a concise summary of the student's performance in one short paragraph, including strengths and weaknesses.
+        Use this context:
+        - Assignment name: {assignment.get('name')}
+        - Questions: {num_questions}
+        - Total raw points: {latest_sum} (out of {num_questions*max_per_q})
+        Format as plain text.
+        """
         try:
             summary = ss.rag_core.prompt_gemini(summary_prompt)
         except Exception:
             summary = "Summary unavailable."
+        
+        # Mark submission as completed
         ss.homework_server.mark_submission_completed(submission_id=submission["id"], overall_score=percent, summary=summary)
-        st.success(f"Assignment submitted. Final score: {percent}%")
-        ss.page = "assignments"
+        st.success(f"🎉 Assignment completed! Final score: {percent}%")
+        st.info("You can now view your results or return to assignments.")
+        
+        # Refresh the submission to get updated status
+        ss.submission = ss.homework_server.get_completed_submission(ss.current_user['id'], assignment['id'])
 
 
 def take_assignment():
@@ -145,6 +238,12 @@ def take_assignment():
     if not assignment:
         st.info("Select an assignment to begin.")
         return
+    
+    # Check if submission is completed
+    if submission and submission.get('status') == 'completed':
+        display_completed_assignment(assignment, submission)
+        return
+    
     st.header(f"📝 {assignment['name']}")
     st.caption(f"Submission ID: {submission['id']} — Started: {submission['started_at']}")
 
@@ -154,6 +253,22 @@ def take_assignment():
     # Load image bytes for questions (base64) when available
     image_qs = ss.homework_server.get_assignment_questions(assignment['id'], include_image_bytes=True)
     image_lookup = {item['id']: item for item in image_qs}
+
+    # Determine current attempt state
+    total_questions = len(assignment.get("questions", []))
+    questions_with_attempts = sum(1 for q in assignment.get("questions", []) 
+                                 if len(answers_by_q.get(q["id"], [])) > 0)
+    
+    # Check if this is first attempt (no questions answered yet)
+    is_first_attempt = questions_with_attempts == 0
+    
+    # Check if first attempt is complete (all questions have at least 1 attempt)
+    first_attempt_complete = questions_with_attempts == total_questions and total_questions > 0
+    
+    # Check if second attempt is complete (all questions have 2 attempts)
+    questions_with_two_attempts = sum(1 for q in assignment.get("questions", []) 
+                                     if len(answers_by_q.get(q["id"], [])) >= 2)
+    second_attempt_complete = questions_with_two_attempts == total_questions and total_questions > 0
 
     # Show questions
     for question_index, q in enumerate(assignment.get("questions", []), 1):
@@ -174,39 +289,66 @@ def take_assignment():
 
         attempts = answers_by_q.get(qid, [])
         used = len(attempts)
-        last_grade = attempts[-1]["grade"] if attempts else None
-        last_feedback = attempts[-1]["feedback"] if attempts else None
-        last_answer = attempts[-1]["student_answer"] if attempts else None
-
+        
+        # Show attempt history
         if attempts:
-            st.markdown(f"- Attempts: {used}")
-            st.markdown(f"- Last grade: {last_grade if last_grade is not None else '-'}")
-            if last_feedback:
-                st.info(f"Feedback: {last_feedback}")
-            if last_answer:
-                with st.expander("View last submitted answer"):
-                    st.write(last_answer)
+            st.markdown(f"**Attempts completed: {used}/2**")
+            for i, attempt in enumerate(attempts, 1):
+                with st.expander(f"Attempt {i} - Grade: {attempt['grade']}/2"):
+                    st.write(f"**Your answer:** {attempt['student_answer']}")
+                    if attempt['feedback']:
+                        st.info(f"**Feedback:** {attempt['feedback']}")
+        
+        # Determine if student can answer this question
+        can_answer = used < 2
+        
+        if can_answer:
+            # Pre-fill with last attempt if available
+            last_answer = attempts[-1]["student_answer"] if attempts else ""
+            answer = st.text_area(f"Your answer (Attempt {used + 1})", 
+                                key=f"ans_{qid}", 
+                                value=ss.answers_draft.get(qid, last_answer))
+            ss.answers_draft[qid] = answer
+        else:
+            st.success("✅ Maximum attempts reached for this question.")
+            if attempts:
+                st.write(f"**Final answer:** {attempts[-1]['student_answer']}")
 
-        # Gate input
-        if used >= 2 or last_grade == 2:
-            st.success("No more attempts allowed for this question.")
-            continue
-
-        answer = st.text_area("Your answer", key=f"ans_{qid}", value=ss.answers_draft.get(qid, ""))
-        ss.answers_draft[qid] = answer
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("Save & Grade Now"):
-            grade_and_save(ss.answers_draft, finalize=False)
-            st.rerun()
-    with col2:
-        if st.button("Submit Final"):
+    # Button logic based on attempt state
+    if is_first_attempt:
+        # First attempt - only show Save & Grade and Back buttons
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("💾 Save & Grade First Attempt", type="primary"):
+                grade_and_save(ss.answers_draft, finalize=False)
+                st.rerun()
+        with col2:
+            if st.button("← Back to Assignments"):
+                ss.page = "assignments"
+                st.rerun()
+    
+    elif first_attempt_complete and not second_attempt_complete:
+        # First attempt complete, ready for second attempt
+        st.success("🎉 First attempt completed! You can now make your second attempt.")
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            if st.button("💾 Save & Grade Second Attempt", type="primary"):
+                grade_and_save(ss.answers_draft, finalize=False)
+                st.rerun()
+        with col2:
+            if st.button("✅ Submit Final Assignment"):
+                grade_and_save(ss.answers_draft, finalize=True)
+                st.rerun()
+        with col3:
+            if st.button("← Back to Assignments"):
+                ss.page = "assignments"
+                st.rerun()
+    
+    elif second_attempt_complete:
+        # Both attempts complete, mark as finished
+        st.success("🎉 Assignment completed! Both attempts have been submitted.")
+        if st.button("✅ Submit Final Assignment"):
             grade_and_save(ss.answers_draft, finalize=True)
-            st.rerun()
-    with col3:
-        if st.button("Back to Assignments"):
-            ss.page = "assignments"
             st.rerun()
 
 
