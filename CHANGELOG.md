@@ -1,8 +1,14 @@
 # Changelog
 
-## [2025-08-26] - Student Assignment Flow Restructure & Documentation Standards
+## [2025-08-26] - Teacher Assignment Results Viewing & Student Flow Restructure
 
 ### 🎯 Major Features Added
+
+#### **Teacher Assignment Results Viewing**
+- **Comprehensive Results Display**: Complete assignment results viewing for teachers
+- **Student Submission Tracking**: Detailed view of all student submissions and attempts
+- **Performance Analytics**: Assignment statistics including completion rates and average scores
+- **Question-by-Question Analysis**: Detailed breakdown of each student's answers and grades
 
 #### **Student Assignment Flow Restructure**
 - **Attempt-Based System**: Implemented proper first and second attempt tracking
@@ -10,23 +16,19 @@
 - **Completed Assignment Viewing**: Students can view finished assignments with full results
 - **Assignment Status Tracking**: Real-time status display (Not Started, In Progress, Completed)
 
-#### **Enhanced User Experience**
-- **First Attempt Flow**: Only "Save & Grade" and "Back" buttons during initial attempt
-- **Second Attempt Flow**: "Save & Grade", "Submit Final", and "Back" buttons after first attempt
-- **Completion Flow**: Only "Back" button with comprehensive results display
-- **Attempt History**: Students can view all attempts with grades and AI feedback
-
 ### 🔧 Technical Improvements
 
 #### **Database Enhancements**
-- **New Functions**: Added `get_completed_submission()` and `get_active_submission()`
+- **New Functions**: Added `get_completed_submission()`, `get_active_submission()`, and `get_all_submissions_for_assignment()`
 - **Status Tracking**: Proper submission status management (in_progress, completed)
 - **Attempt Validation**: Ensures all questions are attempted before final submission
+- **Student Data Integration**: JOIN operations to retrieve student information with submissions
 
 #### **Code Quality**
-- **State Management**: Proper session state handling for attempt tracking
+- **State Management**: Proper session state handling for attempt tracking and results viewing
 - **Error Handling**: Comprehensive validation and user feedback
-- **Database Integration**: Efficient queries for submission status checking
+- **Database Integration**: Efficient queries for submission status checking and results retrieval
+- **UI Organization**: Clear, expandable interface for detailed results viewing
 
 #### **Documentation Standards**
 - **Commit Message Standards**: Added comprehensive commit message guidelines to cursor rules
@@ -35,8 +37,9 @@
 
 ### 📁 Files Modified
 
+- **`app/pages/1_Teacher_Portal.py`**: Added view_assignment_results function and navigation
 - **`app/pages/2_Student_Portal.py`**: Complete restructure of assignment taking flow
-- **`app/database/homework_db.py`**: Added new database functions for submission tracking
+- **`app/database/homework_db.py`**: Added new database functions for submission tracking and results viewing
 - **`.cursor/rules/general.mdc`**: Added commit message and changelog standards
 - **`.gitignore`**: Added `github-summary.md` to temporary files section
 - **`github-summary.md`**: Created for change tracking (gitignored)
@@ -44,6 +47,13 @@
 
 ### 🎯 User Impact
 
+#### **Teacher Experience**
+- **Comprehensive Results**: Complete view of all student submissions and performance
+- **Performance Analytics**: Assignment statistics and average scores for assessment
+- **Detailed Analysis**: Question-by-question breakdown of student performance
+- **AI Feedback Review**: Access to all AI-generated feedback for quality assessment
+
+#### **Student Experience**
 - **Intuitive Flow**: Students follow clear attempt-based progression
 - **Better Feedback**: Real-time grading and attempt history display
 - **Status Awareness**: Clear indication of assignment progress and completion

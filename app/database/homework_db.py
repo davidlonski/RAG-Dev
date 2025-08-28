@@ -442,6 +442,30 @@ class HomeworkServer:
             print(f"❌ Unexpected error during active submission fetch: {exc}")
             return None
 
+    def get_all_submissions_for_assignment(self, assignment_id: int):
+        """Get all submissions (completed and in-progress) for a specific assignment."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return []
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT s.id, s.student_id, s.assignment_id, s.started_at, s.completed_at, s.overall_score, s.summary, s.status, "
+                "u.first_name, u.last_name, u.username "
+                "FROM submissions s "
+                "JOIN users u ON s.student_id = u.id "
+                "WHERE s.assignment_id = %s "
+                "ORDER BY s.completed_at DESC, s.started_at DESC",
+                (assignment_id,),
+            )
+            rows = cursor.fetchall()
+            cursor.close()
+            return rows
+        except Exception as exc:
+            print(f"❌ Unexpected error during submissions fetch: {exc}")
+            return []
+
     def get_or_create_active_submission(self, student_id: int, assignment_id: int):
         """Return the in-progress submission for a student/assignment, or create one."""
         try:

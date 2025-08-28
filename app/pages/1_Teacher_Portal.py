@@ -53,6 +53,8 @@ if 'homework_assignments' not in ss:
     ss.homework_assignments = []
 if 'homework_preview' not in ss:
     ss.homework_preview = None
+if 'selected_assignment_for_results' not in ss:
+    ss.selected_assignment_for_results = None
 
 
 def initialize_services():
@@ -620,7 +622,9 @@ def manage_assignments():
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button(f"📊 View Results", key=f"view_{i}"):
-                        st.info("Results viewing feature coming soon!")
+                        ss.selected_assignment_for_results = assignment
+                        ss.app_stage = "view_results"
+                        st.rerun()
                 with col2:
                     if st.button(f"🗑️ Delete", key=f"delete_{i}"):
                         # Delete from DB
@@ -633,6 +637,100 @@ def manage_assignments():
     # Back button
     if st.button("← Back to Dashboard", key="manage_back"):
         ss.app_stage = "dashboard"
+        st.rerun()
+
+
+def view_assignment_results():
+    """View detailed results for a specific assignment"""
+    assignment = ss.selected_assignment_for_results
+    if not assignment:
+        st.error("No assignment selected for results viewing.")
+        ss.app_stage = "dashboard"
+        st.rerun()
+        return
+    
+    st.header(f"📊 Assignment Results: {assignment['name']}")
+    st.caption(f"Assignment ID: {assignment['id']} | Created: {assignment.get('created_at', 'Unknown')}")
+    
+    # Get all submissions for this assignment
+    submissions = ss.homework_server.get_all_submissions_for_assignment(assignment['id'])
+    
+    if not submissions:
+        st.info("📝 No students have submitted this assignment yet.")
+        if st.button("← Back to Manage Assignments"):
+            ss.app_stage = "manage_assignments"
+            st.rerun()
+        return
+    
+    # Display summary statistics
+    completed_submissions = [s for s in submissions if s['status'] == 'completed']
+    in_progress_submissions = [s for s in submissions if s['status'] == 'in_progress']
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Submissions", len(submissions))
+    with col2:
+        st.metric("Completed", len(completed_submissions))
+    with col3:
+        st.metric("In Progress", len(in_progress_submissions))
+    
+    if completed_submissions:
+        avg_score = sum(s['overall_score'] for s in completed_submissions) / len(completed_submissions)
+        st.metric("Average Score", f"{avg_score:.1f}%")
+    
+    st.markdown("---")
+    
+    # Display each student's submission
+    for i, submission in enumerate(submissions):
+        with st.expander(f"👤 {submission['first_name']} {submission['last_name']} ({submission['username']}) - {submission['status'].upper()}"):
+            
+            # Basic submission info
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write(f"**Submission ID:** {submission['id']}")
+                st.write(f"**Started:** {submission['started_at']}")
+                if submission['completed_at']:
+                    st.write(f"**Completed:** {submission['completed_at']}")
+                st.write(f"**Status:** {submission['status']}")
+            
+            with col2:
+                if submission['overall_score'] is not None:
+                    st.write(f"**Final Score:** {submission['overall_score']}%")
+                if submission['summary']:
+                    st.write(f"**AI Summary:** {submission['summary']}")
+            
+            # Get detailed answers for this submission
+            answers_by_q = ss.homework_server.get_submission_answers(submission['id'])
+            
+            if answers_by_q:
+                st.write("**Detailed Answers:**")
+                
+                # Get assignment questions for reference
+                assignment_questions = ss.homework_server.get_assignment_questions(assignment['id'])
+                question_lookup = {q['id']: q for q in assignment_questions}
+                
+                for question_index, (qid, attempts) in enumerate(answers_by_q.items(), 1):
+                    question = question_lookup.get(qid, {})
+                    
+                    with st.expander(f"Question {question_index}: {question.get('question', 'Unknown question')[:50]}..."):
+                        st.write(f"**Question:** {question.get('question', 'Unknown question')}")
+                        
+                        if question.get('type') == 'image':
+                            st.caption("📷 Image-based question")
+                        
+                        for attempt_num, attempt in enumerate(attempts, 1):
+                            st.write(f"**Attempt {attempt_num}:**")
+                            st.write(f"**Answer:** {attempt['student_answer']}")
+                            st.write(f"**Grade:** {attempt['grade']}/2")
+                            if attempt['feedback']:
+                                st.info(f"**Feedback:** {attempt['feedback']}")
+                            st.write("---")
+            else:
+                st.info("No answers recorded for this submission.")
+    
+    # Back button
+    if st.button("← Back to Manage Assignments"):
+        ss.app_stage = "manage_assignments"
         st.rerun()
 
 
@@ -777,6 +875,8 @@ elif ss.app_stage == "generate_homework":
     generate_homework()
 elif ss.app_stage == "manage_assignments":
     manage_assignments()
+elif ss.app_stage == "view_results":
+    view_assignment_results()
 elif ss.app_stage == "remove_powerpoint":
     remove_powerpoint()
 
