@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 import mysql.connector
 
@@ -23,24 +24,24 @@ class ImageServer:
             self._initialized = True
 
     def _configure_image_server(self):
-        """Configure and return database connection."""
+        """Configure and return database connection using homework database."""
         load_dotenv()
-        IMAGE_DB_HOST = os.getenv("IMAGE_DB_HOST")
-        IMAGE_DB_USER = os.getenv("IMAGE_DB_USER")
-        IMAGE_DB_PASSWORD = os.getenv("IMAGE_DB_PASS")
-        IMAGE_DB_NAME = os.getenv("IMAGE_DB_NAME")
+        HOST = os.getenv("HOMEWORK_DB_HOST")
+        USER = os.getenv("HOMEWORK_DB_USER")
+        PASSWORD = os.getenv("HOMEWORK_DB_PASS")
+        DATABASE = os.getenv("HOMEWORK_DB_NAME")
         
         try:
             mydb = mysql.connector.connect(
-                host=IMAGE_DB_HOST,
-                user=IMAGE_DB_USER,
-                password=IMAGE_DB_PASSWORD,
-                database=IMAGE_DB_NAME
+                host=HOST,
+                user=USER,
+                password=PASSWORD,
+                database=DATABASE
             )
-            print("✅ Database connection established successfully")
+            print("✅ Image Server connected to homework database successfully")
             return mydb
         except Exception as e:
-            print(f"❌ Error connecting to database: {e}")
+            print(f"❌ Error connecting to homework database: {e}")
             return None
 
     @property
@@ -63,10 +64,12 @@ class ImageServer:
             print(f"❌ Error getting database connection: {e}")
             return None
 
-    def upload_image(self, image_bytes):
+    def upload_image(self, image_bytes, image_extension=None, content_type=None):
         """
         Uploads an image to the database and returns the image id
         image_bytes: bytes
+        image_extension: str (optional) - file extension like 'png', 'jpg'
+        content_type: str (optional) - MIME type like 'image/png'
         returns: image_id
         """
         try:
@@ -75,9 +78,12 @@ class ImageServer:
                 print("❌ No database connection available")
                 return None
                 
+            file_size = len(image_bytes)
+            created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
             mycursor = mydb.cursor()
-            sql = "INSERT INTO images (image_data) VALUES (%s)"
-            val = (image_bytes,)
+            sql = "INSERT INTO images (image_data, image_extension, created_at, file_size, content_type) VALUES (%s, %s, %s, %s, %s)"
+            val = (image_bytes, image_extension, created_at, file_size, content_type)
             mycursor.execute(sql, val)
             mydb.commit()
             image_id = mycursor.lastrowid
@@ -89,9 +95,9 @@ class ImageServer:
             
     def get_image(self, image_id):
         """
-        Gets an image from the database and returns the image data
+        Gets an image from the database and returns the image data and metadata
         image_id: int
-        returns: image_data
+        returns: dict with image_data, image_extension, file_size, content_type, created_at
         """
         try:
             mydb = self.get_connection()
@@ -99,17 +105,33 @@ class ImageServer:
                 print("❌ No database connection available")
                 return None
                 
-            mycursor = mydb.cursor()
-            sql = "SELECT image_data FROM images WHERE id = %s"
+            mycursor = mydb.cursor(dictionary=True)
+            sql = "SELECT image_data, image_extension, file_size, content_type, created_at FROM images WHERE id = %s"
             val = (image_id,)
             mycursor.execute(sql, val)
-            image_data = mycursor.fetchone()
+            result = mycursor.fetchone()
             mycursor.close()
-            return image_data
+            return result
         except Exception as e:
             print(f"❌ Unexpected error during image get: {e}")
             return None
             
+    def get_image_as_base64(self, image_id):
+        """
+        Gets an image from the database and returns it as base64 encoded string
+        image_id: int
+        returns: base64 encoded string or None if error
+        """
+        try:
+            import base64
+            result = self.get_image(image_id)
+            if result and result.get('image_data'):
+                return base64.b64encode(result['image_data']).decode('utf-8')
+            return None
+        except Exception as e:
+            print(f"❌ Unexpected error during image base64 conversion: {e}")
+            return None
+
     def delete_image(self, image_id):
         """
         Deletes an image from the database

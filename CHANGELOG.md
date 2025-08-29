@@ -1,8 +1,21 @@
 # Changelog
 
-## [2025-08-26] - Teacher Assignment Results Viewing & Student Flow Restructure
+## [2025-08-26] - Unified Image Storage System & Database Consolidation
 
 ### 🎯 Major Features Added
+
+#### **Unified Image Storage System**
+- **Database Consolidation**: Moved from multiple databases to single homework database
+- **Normalized Image Storage**: Created unified images table with proper metadata tracking
+- **Schema Migration**: Successfully migrated from BLOB storage to normalized image references
+- **Enhanced Metadata**: File size, content type, and creation timestamp tracking
+- **Production Ready**: System fully operational with clean database schema
+
+#### **Database Consolidation**
+- **RAG Quizzer Integration**: Consolidated RAG quizzer functionality into homework database
+- **Code Simplification**: Removed separate rag_quizzer_db.py and migrate_rag_quizzer.py files
+- **Unified Database Access**: All database operations now use single homework database
+- **Reduced Complexity**: Eliminated duplicate database connections and migration scripts
 
 #### **Teacher Assignment Results Viewing**
 - **Comprehensive Results Display**: Complete assignment results viewing for teachers
@@ -23,6 +36,10 @@
 - **Status Tracking**: Proper submission status management (in_progress, completed)
 - **Attempt Validation**: Ensures all questions are attempted before final submission
 - **Student Data Integration**: JOIN operations to retrieve student information with submissions
+- **Image Storage Consolidation**: Unified images table with metadata and foreign key relationships
+- **Migration System**: Automated migration script for existing image data
+- **Database Consolidation**: Integrated RAG quizzer functionality into homework database
+- **Code Cleanup**: Removed unnecessary files and consolidated database operations
 
 #### **Code Quality**
 - **State Management**: Proper session state handling for attempt tracking and results viewing
@@ -37,9 +54,15 @@
 
 ### 📁 Files Modified
 
+- **`app/database/homework_schema.sql`**: Added images table and updated questions table structure
+- **`app/database/image_db.py`**: Updated to use homework database and enhanced metadata
+- **`app/database/homework_db.py`**: Updated to use image_id references and added submission tracking functions
+- **`app/pptx_rag_quizzer/quiz_master.py`**: Updated to handle new image data format
+- **`app/pptx_rag_quizzer/image_magic.py`**: Updated image upload and retrieval functions
+- **`app/pptx_rag_quizzer/rag_core.py`**: Updated image upload calls
+- **`app/database/migrate_images.py`**: Created migration script for existing data
 - **`app/pages/1_Teacher_Portal.py`**: Added view_assignment_results function and navigation
 - **`app/pages/2_Student_Portal.py`**: Complete restructure of assignment taking flow
-- **`app/database/homework_db.py`**: Added new database functions for submission tracking and results viewing
 - **`.cursor/rules/general.mdc`**: Added commit message and changelog standards
 - **`.gitignore`**: Added `github-summary.md` to temporary files section
 - **`github-summary.md`**: Created for change tracking (gitignored)
@@ -141,8 +164,7 @@ CREATE TABLE rag_quizzer_slides (
 
 #### **Database Servers**
 - **`UserServer`**: CRUD operations for user management
-- **`RAGQuizzerServer`**: CRUD operations for RAG quizzer persistence
-- **Updated `HomeworkServer`**: Integrated with user system
+- **`HomeworkServer`**: Integrated homework and RAG quizzer management
 
 #### **Application Structure**
 - **Multi-page Streamlit App**: Restructured to use Streamlit's `pages/` directory
@@ -177,15 +199,13 @@ app/
 │   └── 2_Student_Portal.py   # Student portal
 ├── database/
 │   ├── user_db.py            # User CRUD operations
-│   ├── rag_quizzer_db.py     # RAG quizzer CRUD operations
-│   ├── homework_db.py        # Updated with user integration
-│   └── migrate_rag_quizzer.py # Database migration script
-└── test_rag_quizzer.py       # Test script for RAG quizzer operations
+│   └── homework_db.py        # Homework and RAG quizzer management
+
 ```
 
 ### 🔄 Migration Process
 
-1. **Database Migration**: Run `python app/database/migrate_rag_quizzer.py`
+
 2. **Default Users**: Created teacher and student accounts
 3. **Data Migration**: Existing presentations saved to database
 

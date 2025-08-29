@@ -18,7 +18,7 @@ from database.image_db import ImageServer
 from pptx_rag_quizzer.image_magic import ImageMagic
 from database.homework_db import HomeworkServer
 from database.user_db import UserServer
-from database.rag_quizzer_db import RAGQuizzerServer
+
 
 # Page configuration
 st.set_page_config(
@@ -41,8 +41,7 @@ if 'image_magic' not in ss:
     ss.image_magic = None
 if 'user_server' not in ss:
     ss.user_server = UserServer()
-if 'rag_quizzer_server' not in ss:
-    ss.rag_quizzer_server = RAGQuizzerServer()
+
 if 'current_user' not in ss:
     ss.current_user = None
 if 'app_stage' not in ss:
@@ -88,6 +87,7 @@ def upload_and_process_pptx():
     )
     
     if uploaded_file is not None:
+        
         with st.spinner("Processing PowerPoint file..."):
             file_bytes = uploaded_file.read()
             file_object = io.BytesIO(file_bytes)
@@ -111,35 +111,33 @@ def upload_and_process_pptx():
                     st.write(f"**Text Items:** {total_text}")
                     st.write(f"**Images:** {total_images}")
 
-                    # Show slide preview
-                    with st.expander("📄 Slide Preview"):
-                        for i, slide in enumerate(presentation.slides[:5]):  # Show first 5 slides
-                            slide_texts = [item.content for item in slide.items if item.type.value == 'text']
-                            slide_images = [item for item in slide.items if item.type.value == 'image']
+                    # # Show slide preview
+                    # with st.expander("📄 Slide Preview"):
+                    #     for i, slide in enumerate(presentation.slides[:5]):  # Show first 5 slides
+                    #         slide_texts = [item.content for item in slide.items if item.type.value == 'text']
+                    #         slide_images = [item for item in slide.items if item.type.value == 'image']
                             
-                            st.write(f"**Slide {slide.slide_number}** ({len(slide_texts)} texts, {len(slide_images)} images)")
-                            for j, text in enumerate(slide_texts[:2]):  # Show first 2 texts
-                                st.write(f"  Text {j+1}: {text[:100]}{'...' if len(text) > 100 else ''}")
-                            if slide_images:
-                                st.write(f"  Contains {len(slide_images)} image(s)")
+                    #         st.write(f"**Slide {slide.slide_number}** ({len(slide_texts)} texts, {len(slide_images)} images)")
+                    #         for j, text in enumerate(slide_texts[:2]):  # Show first 2 texts
+                    #             st.write(f"  Text {j+1}: {text[:100]}{'...' if len(text) > 100 else ''}")
+                    #         if slide_images:
+                    #             st.write(f"  Contains {len(slide_images)} image(s)")
                     
                     if len(presentation.slides) > 5:
                         st.write(f"... and {len(presentation.slides) - 5} more slides")
                 
                 with col2:
-                    st.write("**Processing Options:**")
-                    auto_describe = st.checkbox("Auto-describe images", value=True)
-                    create_collection = st.checkbox("Create RAG collection", value=True)
+                    st.write("**Process PPTX:**")
                     
                     if st.button("🚀 Process Presentation", type="primary"):
-                        process_presentation(presentation, auto_describe, create_collection)
+                        process_presentation(presentation)
                 
                 
                     
             except Exception as e:
                 st.error(f"❌ Error processing PowerPoint file: {e}")
 
-def process_presentation(presentation, auto_describe, create_collection):
+def process_presentation(presentation):
     """Process the presentation and store in database"""
     try:
         
@@ -148,16 +146,14 @@ def process_presentation(presentation, auto_describe, create_collection):
         
         # Create RAG collection if requested
         collection_id = None
-        if create_collection:
-            with st.spinner("Creating RAG collection..."):
-                collection_id = ss.rag_core.create_collection(presentation)
-                st.success(f"✅ RAG collection created: {collection_id}")
+        with st.spinner("Creating RAG collection..."):
+            collection_id = ss.rag_core.create_collection(presentation)
+            st.success(f"✅ RAG collection created: {collection_id}")
 
         # Describe images
-        if auto_describe:
-            ss.presentation_metadata = (presentation, collection_id)
-            ss.app_stage = "describe_images"
-            st.rerun()
+        ss.presentation_metadata = (presentation, collection_id)
+        ss.app_stage = "describe_images"
+        st.rerun()
         
     except Exception as e:
         st.error(f"❌ Error processing presentation: {e}")
@@ -415,7 +411,7 @@ def process_quiz_rag():
                 'slides': [{'slide_number': slide.slide_number, 'content': [item.content for item in slide.items]} for slide in presentation.slides]
             }
             
-            quizzer_id = ss.rag_quizzer_server.create_rag_quizzer(quizzer_data)
+            quizzer_id = ss.homework_server.create_rag_quizzer(quizzer_data)
             if quizzer_id:
                 st.success(f"✅ RAG quizzer saved to database with ID: {quizzer_id}")
             else:
@@ -432,7 +428,7 @@ def generate_homework():
     st.header("📋 Generate Homework")
 
     # Load RAG quizzers from database
-    rag_quizzers = ss.rag_quizzer_server.get_rag_quizzers_by_teacher(ss.current_user['id'])
+    rag_quizzers = ss.homework_server.get_rag_quizzers_by_teacher(ss.current_user['id'])
     
 
     
@@ -720,6 +716,7 @@ def view_assignment_results():
                         
                         for attempt_num, attempt in enumerate(attempts, 1):
                             st.write(f"**Attempt {attempt_num}:**")
+                            
                             st.write(f"**Answer:** {attempt['student_answer']}")
                             st.write(f"**Grade:** {attempt['grade']}/2")
                             if attempt['feedback']:
@@ -739,7 +736,7 @@ def remove_powerpoint():
     st.header("🗑️ Remove PowerPoint")
     
     # Load RAG quizzers from database
-    rag_quizzers = ss.rag_quizzer_server.get_rag_quizzers_by_teacher(ss.current_user['id'])
+    rag_quizzers = ss.homework_server.get_rag_quizzers_by_teacher(ss.current_user['id'])
     
     if not rag_quizzers:
         st.warning("⚠️ No presentations to remove.")
@@ -770,7 +767,7 @@ def remove_powerpoint():
                             ss.rag_core.remove_collection(rag_quizzer['collection_id'])
                         
                         # Remove from database
-                        success = ss.rag_quizzer_server.delete_rag_quizzer(rag_quizzer['id'])
+                        success = ss.homework_server.delete_rag_quizzer(rag_quizzer['id'])
                         
                         if success:
                             st.success("✅ Presentation removed successfully!")
@@ -802,7 +799,7 @@ def dashboard():
         st.rerun()
 
     # Get count of presentations from database
-    rag_quizzers = ss.rag_quizzer_server.get_rag_quizzers_by_teacher(ss.current_user['id'])
+    rag_quizzers = ss.homework_server.get_rag_quizzers_by_teacher(ss.current_user['id'])
     presentation_count = len(rag_quizzers)
     
 

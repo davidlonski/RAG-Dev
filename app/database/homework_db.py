@@ -1,6 +1,7 @@
 import os
 import uuid
 import base64
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
@@ -166,8 +167,8 @@ class HomeworkServer:
             assignment_id = cursor.lastrowid
 
             insert_question_sql = (
-                "INSERT INTO questions (assignment_id, type, question, answer, context, image_bytes, image_extension, created_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                "INSERT INTO questions (assignment_id, type, question, answer, context, image_id, created_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s)"
             )
 
 
@@ -178,12 +179,14 @@ class HomeworkServer:
                 ctx = q.get("context")
                 if isinstance(ctx, list):
                     ctx = "\n".join(ctx)
+                
+                image_id = None
                 if qtype == "image" and q.get("image_bytes") and q.get("image_extension"):
+                    # Upload image to images table and get image_id
+                    from database.image_db import ImageServer
+                    image_server = ImageServer()
                     img_bytes = base64.b64decode(q.get("image_bytes"))
-                    img_ext = q.get("image_extension")
-                else:
-                    img_bytes = None
-                    img_ext = None
+                    image_id = image_server.upload_image(img_bytes, q["image_extension"])
 
                 cursor.execute(
                     insert_question_sql,
@@ -193,8 +196,7 @@ class HomeworkServer:
                         qtext,
                         ans,
                         ctx,
-                        img_bytes,
-                        img_ext,
+                        image_id,
                         created_at,
                     ),
                 )
@@ -247,7 +249,7 @@ class HomeworkServer:
 
             if include_questions:
                 cursor.execute(
-                    "SELECT id, assignment_id, type, question, answer, context, image_bytes, image_extension, created_at FROM questions WHERE assignment_id = %s ORDER BY id ASC",
+                    "SELECT id, assignment_id, type, question, answer, context, image_id, created_at FROM questions WHERE assignment_id = %s ORDER BY id ASC",
                     (assignment_id,),
                 )
                 qrows = cursor.fetchall()
@@ -263,11 +265,16 @@ class HomeworkServer:
                         "question": q["question"],
                         "answer": q["answer"],
                         "context": ctx,
-                        "image_extension": q.get("image_extension"),
+                        "image_id": q.get("image_id"),
                         "created_at": q["created_at"].isoformat() if q.get("created_at") else None,
                     }
-                    if include_image_bytes and q.get("image_bytes") is not None:
-                        qdict["image_bytes"] = None #base64.b64encode(q["image_bytes"]).decode("utf-8")
+                    if include_image_bytes and q.get("image_id") is not None:
+                        # Get image data from images table
+                        from database.image_db import ImageServer
+                        image_server = ImageServer()
+                        image_data = image_server.get_image_as_base64(q["image_id"])
+                        if image_data:
+                            qdict["image_bytes"] = image_data
                     questions.append(qdict)
                 assignment["questions"] = questions
 
@@ -325,7 +332,7 @@ class HomeworkServer:
                 return []
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
-                "SELECT id, assignment_id, type, question, answer, context, image_bytes, image_extension, created_at FROM questions WHERE assignment_id = %s ORDER BY id ASC",
+                "SELECT id, assignment_id, type, question, answer, context, image_id, created_at FROM questions WHERE assignment_id = %s ORDER BY id ASC",
                 (assignment_id,),
             )
             qrows = cursor.fetchall()
@@ -342,11 +349,16 @@ class HomeworkServer:
                     "question": q["question"],
                     "answer": q["answer"],
                     "context": ctx,
-                    "image_extension": q.get("image_extension"),
+                    "image_id": q.get("image_id"),
                     "created_at": q["created_at"].isoformat() if q.get("created_at") else None,
                 }
-                if include_image_bytes and q.get("image_bytes") is not None:
-                    item["image_bytes"] = base64.b64encode(q["image_bytes"]).decode("utf-8")
+                if include_image_bytes and q.get("image_id") is not None:
+                    # Get image data from images table
+                    from database.image_db import ImageServer
+                    image_server = ImageServer()
+                    image_data = image_server.get_image_as_base64(q["image_id"])
+                    if image_data:
+                        item["image_bytes"] = image_data
                 result.append(item)
             return result
         except Exception as exc:
@@ -715,3 +727,170 @@ class HomeworkServer:
         except Exception as exc:
             print(f"❌ Unexpected error during student submissions fetch: {exc}")
             return []
+
+    # RAG Quizzer Methods (Integrated from rag_quizzer_db.py)
+    def create_rag_quizzer(self, quizzer_data):
+        """
+        Create a new RAG quizzer entry.
+
+        quizzer_data: dict with the following structure:
+        {
+            'teacher_id': int,
+            'name': str,
+            'collection_id': str,
+            'presentation_name': str,
+            'num_slides': int,
+            'num_text_items': int,
+            'num_image_items': int,
+            'slides': List[Dict] (optional)
+        }
+
+        Returns the quizzer id if successful, None otherwise.
+        """
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return None
+
+            cursor = None
+            try:
+                # Validate required fields
+                required_fields = ['teacher_id', 'name', 'collection_id', 'presentation_name', 'num_slides']
+                for field in required_fields:
+                    if field not in quizzer_data or quizzer_data[field] is None:
+                        print(f"❌ Missing required field: {field}")
+                        return None
+
+                cursor = mydb.cursor()
+                
+                # Insert RAG quizzer
+                insert_sql = (
+                    "INSERT INTO rag_quizzers (teacher_id, name, collection_id, presentation_name, "
+                    "num_slides, num_text_items, num_image_items, created_at, status) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'active')"
+                )
+                cursor.execute(
+                    insert_sql,
+                    (
+                        quizzer_data['teacher_id'],
+                        quizzer_data['name'],
+                        quizzer_data['collection_id'],
+                        quizzer_data['presentation_name'],
+                        quizzer_data['num_slides'],
+                        quizzer_data.get('num_text_items', 0),
+                        quizzer_data.get('num_image_items', 0),
+                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    ),
+                )
+
+                quizzer_id = cursor.lastrowid
+
+                # Insert slides if provided
+                if 'slides' in quizzer_data and quizzer_data['slides']:
+                    slide_insert_sql = (
+                        "INSERT INTO rag_quizzer_slides (rag_quizzer_id, slide_number, slide_content, created_at) "
+                        "VALUES (%s, %s, %s, %s)"
+                    )
+                    for slide in quizzer_data['slides']:
+                        slide_content = json.dumps(slide) if isinstance(slide, dict) else str(slide)
+                        cursor.execute(
+                            slide_insert_sql,
+                            (
+                                quizzer_id,
+                                slide.get('slide_number', 0),
+                                slide_content,
+                                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            ),
+                        )
+
+                mydb.commit()
+                print(f"✅ RAG Quizzer created successfully with ID: {quizzer_id}")
+                return quizzer_id
+
+            except Exception as e:
+                try:
+                    if mydb:
+                        mydb.rollback()
+                except Exception:
+                    pass
+                print(f"❌ Unexpected error during RAG quizzer creation: {e}")
+                return None
+            finally:
+                try:
+                    if cursor:
+                        cursor.close()
+                except Exception:
+                    pass
+
+        except Exception as e:
+            print(f"❌ Error creating RAG quizzer: {e}")
+            return None
+
+    def get_rag_quizzers_by_teacher(self, teacher_id: int):
+        """Get all RAG quizzers for a specific teacher."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return []
+
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id, teacher_id, name, collection_id, presentation_name, "
+                "num_slides, num_text_items, num_image_items, created_at, status "
+                "FROM rag_quizzers WHERE teacher_id = %s AND status = 'active' "
+                "ORDER BY created_at DESC",
+                (teacher_id,),
+            )
+            rows = cursor.fetchall()
+            cursor.close()
+
+            result = []
+            for row in rows:
+                result.append({
+                    'id': row['id'],
+                    'teacher_id': row['teacher_id'],
+                    'name': row['name'],
+                    'collection_id': row['collection_id'],
+                    'presentation_name': row['presentation_name'],
+                    'num_slides': row['num_slides'],
+                    'num_text_items': row['num_text_items'],
+                    'num_image_items': row['num_image_items'],
+                    'created_at': row['created_at'].isoformat() if row.get('created_at') else None,
+                    'status': row['status'],
+                })
+
+            return result
+
+        except Exception as e:
+            print(f"❌ Error getting RAG quizzers by teacher: {e}")
+            return []
+
+    def delete_rag_quizzer(self, quizzer_id: int):
+        """Soft delete a RAG quizzer by setting status to 'archived'."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return False
+
+            cursor = mydb.cursor()
+            cursor.execute(
+                "UPDATE rag_quizzers SET status = 'archived' WHERE id = %s",
+                (quizzer_id,),
+            )
+            mydb.commit()
+            cursor.close()
+
+            print(f"✅ RAG Quizzer {quizzer_id} archived successfully")
+            return True
+
+        except Exception as e:
+            try:
+                if mydb:
+                    mydb.rollback()
+            except Exception:
+                pass
+            print(f"❌ Error deleting RAG quizzer: {e}")
+            return False

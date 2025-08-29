@@ -494,25 +494,29 @@ class ImageMagic:
         """
         try:
             image_data = self.image_server.get_image(image_id)
-            if image_data and len(image_data) > 0:
-                return image_data[0]  # get_image returns a tuple, we want the first element
+            if image_data and isinstance(image_data, dict):
+                return image_data.get("image_data")
+            elif image_data and isinstance(image_data, tuple) and len(image_data) > 0:
+                return image_data[0]  # Legacy tuple format
             return None
         except Exception as e:
             print(f"Error retrieving image from database: {e}")
             return None
 
-    def upload_image_to_database(self, image_bytes: bytes):
+    def upload_image_to_database(self, image_bytes: bytes, image_extension: str = None, content_type: str = None):
         """
         Upload an image to the database.
         
         Args:
             image_bytes (bytes): The image data to upload
+            image_extension (str): File extension like 'png', 'jpg'
+            content_type (str): MIME type like 'image/png'
             
         Returns:
             int: The ID of the uploaded image, or None if failed
         """
         try:
-            image_id = self.image_server.upload_image(image_bytes)
+            image_id = self.image_server.upload_image(image_bytes, image_extension, content_type)
             return image_id
         except Exception as e:
             print(f"Error uploading image to database: {e}")

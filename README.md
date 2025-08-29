@@ -74,7 +74,7 @@ A comprehensive RAG (Retrieval-Augmented Generation) application built with Pyth
 
 5. **Run database migrations**
    ```bash
-   python app/database/migrate_rag_quizzer.py
+   
    ```
 
 6. **Start the application**
@@ -109,10 +109,8 @@ RAG-Dev/
 │   │   └── 2_Student_Portal.py   # Student portal
 │   ├── database/
 │   │   ├── user_db.py            # User CRUD operations
-│   │   ├── rag_quizzer_db.py     # RAG quizzer CRUD operations
-│   │   ├── homework_db.py        # Homework management
-│   │   ├── image_db.py           # Image storage
-│   │   └── migrate_rag_quizzer.py # Database migration
+│   │   ├── homework_db.py        # Homework and RAG quizzer CRUD operations
+│   │   └── image_db.py           # Image storage
 │   ├── pptx_rag_quizzer/
 │   │   ├── rag_core.py           # Core RAG functionality
 │   │   ├── quiz_master.py        # Question generation
@@ -151,11 +149,7 @@ After running migrations, default accounts are created:
 
 ### **Test Scripts**
 ```bash
-# Test RAG quizzer operations
-python app/test_rag_quizzer.py
 
-# Test ChromaDB collections
-python app/test_chromadb.py
 ```
 
 ## 🔄 Workflow

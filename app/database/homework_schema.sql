@@ -50,6 +50,16 @@ CREATE TABLE assignments (
   FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+-- Images table for unified image storage
+CREATE TABLE images (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  image_data LONGBLOB NOT NULL,
+  image_extension VARCHAR(12) NULL,
+  created_at DATETIME NOT NULL,
+  file_size INT NULL,
+  content_type VARCHAR(100) NULL
+);
+
 CREATE TABLE questions (
   id INT PRIMARY KEY AUTO_INCREMENT,
   assignment_id INT NOT NULL,
@@ -57,10 +67,10 @@ CREATE TABLE questions (
   question LONGTEXT NOT NULL,
   answer LONGTEXT NOT NULL,
   context LONGTEXT NULL,
-  image_bytes LONGBLOB NULL,
-  image_extension VARCHAR(12) NULL,
+  image_id INT NULL,
   created_at DATETIME NOT NULL,
-  FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE ON UPDATE CASCADE
+  FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- Update submissions table to include student_id foreign key

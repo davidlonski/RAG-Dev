@@ -116,7 +116,7 @@ class RAGCore:
                 # Add additional fields for images
                 if metadata["type"] == "image":
                     combined_metadata[f"item_{item_num}_image_extension"] = metadata["extension"]
-                    image_id = image_server.upload_image(metadata["image_bytes"])
+                    image_id = image_server.upload_image(metadata["image_bytes"], metadata.get("image_extension"), metadata.get("content_type"))
                     combined_metadata[f"item_{item_num}_image_id"] = image_id
 
             combined_metadata["slide_number"] = slide.slide_number

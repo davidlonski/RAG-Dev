@@ -117,17 +117,18 @@ class QuizMaster:
                     image_extension = value
             
             if image_id is not None:
-                # Fetch image from DB and handle multiple possible return shapes
+                # Fetch image from DB using new unified structure
                 fetched = self.image_server.get_image(image_id)
                 image_bytes = None
                 if fetched is None:
                     image_bytes = None
-                elif isinstance(fetched, tuple):
-                    image_bytes = fetched[0] if len(fetched) > 0 else None
                 elif isinstance(fetched, dict):
                     image_bytes = fetched.get("image_data")
                 elif isinstance(fetched, (bytes, bytearray, memoryview)):
                     image_bytes = bytes(fetched)
+                else:
+                    # Handle legacy tuple format for backward compatibility
+                    image_bytes = fetched[0] if isinstance(fetched, tuple) and len(fetched) > 0 else None
 
                 if not image_bytes:
                     print(f"No image bytes found for image_id={image_id}")
