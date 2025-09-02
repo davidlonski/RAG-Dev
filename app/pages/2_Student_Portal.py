@@ -94,7 +94,6 @@ def view_assignments():
         
         with st.expander(f"{a['name']} — {a['num_questions']} questions"):
             st.write(f"**Status:** {status_text}")
-            st.write(f"**Created:** {a.get('created_at','')}")
             st.write(f"**Questions:** Text: {a['num_text_questions']}, Image: {a['num_image_questions']}")
             
             if st.button(button_text, key=f"start_{a['id']}"):
@@ -146,7 +145,7 @@ def display_completed_assignment(assignment, submission):
             st.warning("No attempts recorded for this question.")
     
     # Only show back button for completed assignments
-    if st.button("← Back to Assignments"):
+    if st.button("← Back to Assignments", key="student_back1"):
         ss.page = "assignments"
         st.rerun()
 
@@ -245,7 +244,7 @@ def take_assignment():
         return
     
     st.header(f"📝 {assignment['name']}")
-    st.caption(f"Submission ID: {submission['id']} — Started: {submission['started_at']}")
+    st.caption(f"Started at: {submission['started_at']}")
 
     # Load current attempts from DB for display and gating
     answers_by_q = ss.homework_server.get_submission_answers(submission['id'])
@@ -323,7 +322,7 @@ def take_assignment():
                 grade_and_save(ss.answers_draft, finalize=False)
                 st.rerun()
         with col2:
-            if st.button("← Back to Assignments"):
+            if st.button("← Back to Assignments", key="student_back2"):
                 ss.page = "assignments"
                 st.rerun()
     
@@ -340,7 +339,7 @@ def take_assignment():
                 grade_and_save(ss.answers_draft, finalize=True)
                 st.rerun()
         with col3:
-            if st.button("← Back to Assignments"):
+            if st.button("← Back to Assignments", key="student_back3"):
                 ss.page = "assignments"
                 st.rerun()
     

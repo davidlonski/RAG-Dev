@@ -22,7 +22,7 @@ from database.user_db import UserServer
 
 # Page configuration
 st.set_page_config(
-    page_title="Teacher Dashboard - Database Integration",
+    page_title="Teacher Dashboard",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -80,11 +80,17 @@ def upload_and_process_pptx():
     """Upload and process PowerPoint file"""
     st.header("📁 Upload PPTX")
     
+    
     uploaded_file = st.file_uploader(
         "Upload PowerPoint file (.pptx)",
         type=['pptx'],
         help="Select a PowerPoint file to process"
     )
+    
+    # Add back button
+    if st.button("← Back to Dashboard"):
+        ss.app_stage = "dashboard"
+        st.rerun()
     
     if uploaded_file is not None:
         
@@ -101,7 +107,6 @@ def upload_and_process_pptx():
                 
                 with col1:
                     st.write("**Presentation Details:**")
-                    st.write(f"**ID:** {presentation.id}")
                     st.write(f"**Slides:** {len(presentation.slides)}")
                     
                     # Count items
@@ -111,18 +116,6 @@ def upload_and_process_pptx():
                     st.write(f"**Text Items:** {total_text}")
                     st.write(f"**Images:** {total_images}")
 
-                    # # Show slide preview
-                    # with st.expander("📄 Slide Preview"):
-                    #     for i, slide in enumerate(presentation.slides[:5]):  # Show first 5 slides
-                    #         slide_texts = [item.content for item in slide.items if item.type.value == 'text']
-                    #         slide_images = [item for item in slide.items if item.type.value == 'image']
-                            
-                    #         st.write(f"**Slide {slide.slide_number}** ({len(slide_texts)} texts, {len(slide_images)} images)")
-                    #         for j, text in enumerate(slide_texts[:2]):  # Show first 2 texts
-                    #             st.write(f"  Text {j+1}: {text[:100]}{'...' if len(text) > 100 else ''}")
-                    #         if slide_images:
-                    #             st.write(f"  Contains {len(slide_images)} image(s)")
-                    
                     if len(presentation.slides) > 5:
                         st.write(f"... and {len(presentation.slides) - 5} more slides")
                 
@@ -162,6 +155,11 @@ def process_presentation(presentation):
 def describe_images():
     """Describe images"""
     st.header("📋 Describe Images")
+    
+    # Add back button
+    if st.button("← Back to Upload", key="describe_back"):
+        ss.app_stage = "upload_pptx"
+        st.rerun()
     
     if 'presentation_metadata' not in ss:
         st.error("No presentation metadata found. Please upload a presentation first.")
@@ -374,6 +372,11 @@ def process_quiz_rag():
     """Process the quiz and RAG"""
     st.header("📋 Process Quiz and RAG")
     
+    # Add back button
+    if st.button("← Back to Describe Images", key="quiz_back"):
+        ss.app_stage = "describe_images"
+        st.rerun()
+    
     if 'presentation_metadata' not in ss:
         st.error("No presentation metadata found. Please upload a presentation first.")
         ss.app_stage = "upload_pptx"
@@ -426,6 +429,7 @@ def process_quiz_rag():
 def generate_homework():
     """Generate homework assignments"""
     st.header("📋 Generate Homework")
+    st.write("Welcome to the generate homework page. Here you can generate homework assignments for your students.")
 
     # Load RAG quizzers from database
     rag_quizzers = ss.homework_server.get_rag_quizzers_by_teacher(ss.current_user['id'])
@@ -434,13 +438,13 @@ def generate_homework():
     
     if not rag_quizzers:
         st.warning("⚠️ No presentations uploaded yet. Please upload a PowerPoint file first.")
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Dashboard", key="generate_back1"):
             ss.app_stage = "dashboard"
             st.rerun()
         return
     
     # Select presentation
-    st.subheader("Select Presentation")
+    st.subheader("1) Select Presentation")
     selected_quizzer = st.selectbox(
         "Choose a presentation to generate homework from:",
         options=rag_quizzers,
@@ -448,13 +452,10 @@ def generate_homework():
     )
     
     if selected_quizzer:
-        st.write(f"**Selected:** {selected_quizzer['name']}")
-        st.write(f"**Slides:** {selected_quizzer['num_slides']}")
-        st.write(f"**Text Items:** {selected_quizzer['num_text_items']}")
-        st.write(f"**Image Items:** {selected_quizzer['num_image_items']}")
+        st.write(f"**Currently Selected:** {selected_quizzer['name']}")
         
         # Homework generation options
-        st.subheader("Homework Options")
+        st.subheader("2) Homework Options")
         col1, col2 = st.columns(2)
         
         with col1:
@@ -470,7 +471,8 @@ def generate_homework():
                 st.success(f"📊 Total questions: {total_questions}")
         
         # Generate homework button
-        if st.button("🎯 Generate Homework Assignment"):
+        st.subheader("3) Generate Homework Assignment");
+        if st.button("Generate"):
             with st.spinner("Generating homework questions..."):
                 try:
                     # Create fresh RAG core and QuizMaster instances
@@ -480,11 +482,6 @@ def generate_homework():
                         return
                     
                     quiz_master = QuizMaster(rag_core)
-                    
-                    # Debug: Check RAG core
-                    st.write(f"**Debug:** RAG Core created: {rag_core is not None}")
-                    st.write(f"**Debug:** QuizMaster created: {quiz_master is not None}")
-                    st.write(f"**Debug:** Collection ID: {selected_quizzer['collection_id']}")
                     
                     # Generate questions based on specified counts
                     generated_questions = []
@@ -529,7 +526,6 @@ def generate_homework():
         if ss.get('homework_preview'):
             preview = ss.homework_preview
             st.subheader("Generated Homework (Preview)")
-            st.write(f"**Assignment:** {preview['presentation_name']}")
             total_q = len(preview['questions'])
             st.write(f"**Questions:** {total_q}  —  Text: {preview['num_text_questions']}, Image: {preview['num_image_questions']}")
             st.write("---")
@@ -548,39 +544,33 @@ def generate_homework():
                     st.write(f"**Context:** {question_data['context'][:200]}...")
                 st.write("---")
 
-            save_col, clear_col = st.columns(2)
-            with save_col:
-                st.write("**Enter a name for the homework assignment:**")
-                name = st.text_input("Homework Name", value=preview['presentation_name'])
-                if name:
-                    if st.button("💾 Save Homework Assignment", key="save_preview"):
-                        homework_assignment = {
-                            'collection_id': preview['collection_id'],
-                            'teacher_id': ss.current_user['id'],  # Add teacher ID
-                            'questions': preview['questions'],
-                            'num_text_questions': preview['num_text_questions'],
-                            'num_image_questions': preview['num_image_questions'],
-                            'status': 'active',
-                            'name': name,
-                        }
-                        
-                        # When saving a new assignment, store only the assignment ID
-                        assignment_id = ss.homework_server.create_assignment(homework_assignment)
-                        if assignment_id:
-                            print(f"🔍 assignment created successfully with ID: {assignment_id}")
-                            ss.homework_assignments.append(assignment_id)
-                            st.success("✅ Homework assignment saved!")
-                        else:
-                            st.error("❌ Failed to create assignment!")
-                        ss.homework_preview = None
-                        st.rerun()
-            with clear_col:
-                if st.button("🧹 Clear Preview", key="clear_preview"):
+            st.write("**Enter a name for the homework assignment:**")
+            name = st.text_input("Homework Name", value=preview['presentation_name'])
+            if name:
+                if st.button("💾 Save Homework Assignment", key="save_preview"):
+                    homework_assignment = {
+                        'collection_id': preview['collection_id'],
+                        'teacher_id': ss.current_user['id'],  # Add teacher ID
+                        'questions': preview['questions'],
+                        'num_text_questions': preview['num_text_questions'],
+                        'num_image_questions': preview['num_image_questions'],
+                        'status': 'active',
+                        'name': name,
+                    }
+                    
+                    # When saving a new assignment, store only the assignment ID
+                    assignment_id = ss.homework_server.create_assignment(homework_assignment)
+                    if assignment_id:
+                        print(f"🔍 assignment created successfully");
+                        ss.homework_assignments.append(assignment_id)
+                        st.success("✅ Homework assignment saved!")
+                    else:
+                        st.error("❌ Failed to create assignment!")
                     ss.homework_preview = None
-                    st.info("Preview cleared.")
+                    st.rerun()
 
     # Back button
-    if st.button("← Back to Dashboard"):
+    if st.button("← Back to Dashboard", key="generate_back2"):
         ss.app_stage = "dashboard"
         st.rerun()
 
@@ -653,7 +643,7 @@ def view_assignment_results():
     
     if not submissions:
         st.info("📝 No students have submitted this assignment yet.")
-        if st.button("← Back to Manage Assignments"):
+        if st.button("← Back to Manage Assignments", key="results_back1"):
             ss.app_stage = "manage_assignments"
             st.rerun()
         return
@@ -726,7 +716,7 @@ def view_assignment_results():
                 st.info("No answers recorded for this submission.")
     
     # Back button
-    if st.button("← Back to Manage Assignments"):
+    if st.button("← Back to Manage Assignments", key="results_back2"):
         ss.app_stage = "manage_assignments"
         st.rerun()
 
@@ -740,7 +730,7 @@ def remove_powerpoint():
     
     if not rag_quizzers:
         st.warning("⚠️ No presentations to remove.")
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Dashboard", key="remove_back1"):
             ss.app_stage = "dashboard"
             st.rerun()
         return
@@ -749,9 +739,7 @@ def remove_powerpoint():
     
     for i, rag_quizzer in enumerate(rag_quizzers):
         with st.expander(f"📄 {rag_quizzer['name']}"):
-            st.write(f"**ID:** {rag_quizzer['id']}")
             st.write(f"**Slides:** {rag_quizzer['num_slides']}")
-            st.write(f"**Collection ID:** {rag_quizzer['collection_id']}")
             st.write(f"**Text Items:** {rag_quizzer['num_text_items']}")
             st.write(f"**Images:** {rag_quizzer['num_image_items']}")
             
@@ -792,6 +780,9 @@ def remove_powerpoint():
 
 def dashboard():
     """Display the dashboard"""
+
+    st.set_page_config(initial_sidebar_state="collapsed")
+
     st.header("📋 Dashboard")
     
     if st.button("Upload PPTX"):
@@ -814,6 +805,11 @@ def dashboard():
         if st.button(f"Remove PowerPoint"):
             ss.app_stage = "remove_powerpoint"
             st.rerun()
+    
+    
+    if st.button("🚪 Logout"):
+        ss.current_user = None
+        st.switch_page("main.py")
             
 
 
@@ -826,37 +822,17 @@ if not ss.current_user:
 
 if ss.current_user['role'] != 'teacher':
     st.error("❌ Access denied. This page is for teachers only.")
-    st.info("Redirecting to student portal...")
-    st.switch_page("pages/2_Student_Portal.py")
+    st.info("Redirecting to login page...")
+    st.switch_page("main.py")
     st.stop()
 
 
 
 # Main app
-st.title("🎓 Teacher Dashboard - Database Integration")
+st.title("🎓 Teacher Dashboard")
 st.write(f"Welcome, {ss.current_user['first_name']} {ss.current_user['last_name']}!")
-st.write("Manage PowerPoint uploads, process images, and create homework assignments.")
 
-# Sidebar navigation
-with st.sidebar:
-    st.header("🧭 Navigation")
-    
-    # User info
-    st.write(f"**Teacher:** {ss.current_user['first_name']} {ss.current_user['last_name']}")
-    st.write(f"**Username:** {ss.current_user['username']}")
-    
-    # Show current stage
-    st.write(f"**Current Stage:** {ss.app_stage.replace('_', ' ').title()}")
-    
-    # Statistics
-    st.write(f"**Uploads:** {len(ss.rag_quizzer_list)}")
-    assignments = ss.homework_server.get_assignments_by_teacher(ss.current_user['id'])
-    st.write(f"**Assignments:** {len(assignments)}")
-    
-    # Logout button
-    if st.button("🚪 Logout"):
-        ss.current_user = None
-        st.switch_page("main.py")
+
     
 
 # Main content based on selected page
@@ -879,5 +855,4 @@ elif ss.app_stage == "remove_powerpoint":
 
 # Footer
 st.markdown("---")
-st.write("**Teacher Dashboard** - Database Integration Workflow")
-st.write("Upload PPTX → Process Images → Create Homework → Manage Assignments")
+st.write("**THIS PROJECT IS STILL IN DEVELOPMENT**")
