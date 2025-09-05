@@ -135,7 +135,7 @@ def display_completed_assignment(assignment, submission):
             img_b64 = img_info.get("image_bytes") if img_info else None
             if img_b64:
                 try:
-                    st.image(base64.b64decode(img_b64), use_container_width=True)
+                    st.image(base64.b64decode(img_b64), width=1000, caption="Question Image")
                 except Exception:
                     st.warning("Unable to display image preview.")
         
@@ -285,7 +285,7 @@ def take_assignment():
             img_b64 = img_info.get("image_bytes") if img_info else None
             if img_b64:
                 try:
-                    st.image(base64.b64decode(img_b64), use_container_width=True)
+                    st.image(base64.b64decode(img_b64), width=1000, caption="Question Image")
                 except Exception:
                     st.warning("Unable to display image preview for this question.")
         else:

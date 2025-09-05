@@ -98,8 +98,10 @@ class RAGCore:
                     all_slide_texts.append(item.content)
                     all_slide_metadatas.append(item.metadata())
                 elif item.type == Type.image:
-                    all_slide_texts.append(item.content)
-                    all_slide_metadatas.append(item.metadata())
+                    # Skip deleted images (marked with "__DELETED__" content)
+                    if item.content != "__DELETED__":
+                        all_slide_texts.append(item.content)
+                        all_slide_metadatas.append(item.metadata())
 
             chunk_id = str(uuid.uuid4())
             all_texts.append(" ".join(all_slide_texts))

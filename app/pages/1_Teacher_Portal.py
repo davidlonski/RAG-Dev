@@ -81,6 +81,11 @@ def upload_and_process_pptx():
     st.header("📁 Upload PPTX")
     
     
+    # Back button
+    if st.button("← Back to Dashboard"):
+        ss.app_stage = "dashboard"
+        st.rerun()
+        
     uploaded_file = st.file_uploader(
         "Upload PowerPoint file (.pptx)",
         type=['pptx'],
@@ -125,10 +130,15 @@ def upload_and_process_pptx():
             except Exception as e:
                 st.error(f"❌ Error processing PowerPoint file: {e}")
     
-    # Back button
-    if st.button("← Back to Dashboard"):
-        ss.app_stage = "dashboard"
-        st.rerun()
+
+def mark_image_as_deleted(presentation, image_id):
+    """Mark an image as deleted by setting its content to a special marker"""
+    for slide in presentation.slides:
+        for item in slide.items:
+            if item.id == image_id and item.type.value == 'image':
+                item.content = "__DELETED__"
+                return True
+    return False
 
 def process_presentation(presentation):
     """Process the presentation and store in database"""
@@ -178,17 +188,43 @@ def describe_images():
     
     # Sort images by slide number first, then by order number within each slide
     all_images.sort(key=lambda img: (img.slide_number, img.order_number))
+    
+    # Count deleted images before filtering
+    deleted_count = len([img for img in all_images if img.content == "__DELETED__"])
+    
+    # Filter out deleted images (marked with "__DELETED__" content)
+    all_images = [img for img in all_images if img.content != "__DELETED__"]
     total = len(all_images)
     
+    # Show deletion status
+    if deleted_count > 0:
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.warning(f"⚠️ {deleted_count} image(s) have been deleted and will not be processed.")
+        with col2:
+            if st.button("🔄 Restore All", key="restore_all", help="Restore all deleted images"):
+                # Restore all deleted images by resetting their content
+                for slide in presentation.slides:
+                    for item in slide.items:
+                        if item.type.value == 'image' and item.content == "__DELETED__":
+                            item.content = 'none'  # Reset to original state
+                st.success("All images restored!")
+                st.rerun()
+    
     if total == 0:
-        st.info("No images found in the presentation.")
-        ss.app_stage = "upload_pptx"
-        st.rerun()
-        return
+        if deleted_count > 0:
+            st.info("All images have been deleted. Click 'Restore All' to bring them back, or continue to create a text-only presentation.")
+        else:
+            st.info("No images found in the presentation.")
+            ss.app_stage = "upload_pptx"
+            st.rerun()
+            return
     
     # Initialize current image index if not set
     if 'current_image_index' not in ss:
         ss.current_image_index = 0
+    
+    # No need for session state tracking - we mark images directly in the presentation
     
     idx = ss.current_image_index
     
@@ -210,7 +246,9 @@ def describe_images():
     if not batch_ready:
         # Show loading screen while generating descriptions
         st.write(f"**Processing {total} images in batches of {BATCH_SIZE}**")
-        st.progress((idx + 1) / total)
+        # Only show progress bar if there are images to process
+        if total > 0:
+            st.progress((idx + 1) / total)
         st.write(
                 f"**Generating descriptions for images {batch_start + 1} to {batch_end}...**"
         )
@@ -257,15 +295,32 @@ def describe_images():
         st.write(
             f"**Batch {current_batch_num} of {total_batches}: Images {batch_start + 1} to {batch_end} of {total}**"
         )
-        st.progress((batch_end) / total)
+        # Only show progress bar if there are images to process
+        if total > 0:
+            st.progress((batch_end) / total)
 
         for i, img_item in enumerate(current_batch):
-            st.write(
-                f"**Image {batch_start + i + 1} of {total}** (from Slide {img_item.slide_number})"
-            )
+            # Create columns for image info and delete button
+            col_info, col_delete = st.columns([4, 1])
+            
+            with col_info:
+                st.write(
+                    f"**Image {batch_start + i + 1} of {total}** (from Slide {img_item.slide_number})"
+                )
+            
+            with col_delete:
+                if st.button("🗑️ Delete", key=f"delete_{img_item.id}", help="Remove this image from the presentation"):
+                    # Mark image as deleted in the presentation
+                    if mark_image_as_deleted(presentation, img_item.id):
+                        st.success(f"Image {batch_start + i + 1} deleted!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to delete image.")
+            
             st.image(
                 Image.open(io.BytesIO(img_item.image_bytes)),
-                use_container_width=True,
+                width=1000,  # Set a fixed width for better control
+                caption=f"Slide {img_item.slide_number} - Image {batch_start + i + 1}"
             )
 
             # Text area for each image with pre-generated description
@@ -293,6 +348,7 @@ def describe_images():
                     if img_item.content:
                         img_item.content = img_item.content
                 st.success("Batch saved!")
+            st.write("Make sure to save the batch before moving to the next batch or finishing.")  
 
         with col3:
             if batch_end < total:
@@ -314,7 +370,7 @@ def describe_images():
                     st.warning("Please ensure all images have descriptions before finishing.")
                     if st.button("Force Finish", key="force_finish"):
                         ss.app_stage = "build_quiz_rag"
-                        st.rerun()
+                        st.rerun()                      
 
     
 def process_quiz_rag():
@@ -341,7 +397,7 @@ def process_quiz_rag():
     name = st.text_input("Name", value=presentation.name)
 
     if st.button("Create"):
-        # Create RAG collection
+        # Create RAG collection (deleted images are already marked in the presentation)
         with st.spinner("Creating RAG collection..."):
             try:
                 if collection_id:
@@ -359,8 +415,8 @@ def process_quiz_rag():
                 'presentation_name': presentation.name,
                 'num_slides': len(presentation.slides),
                 'num_text_items': sum(len([item for item in slide.items if item.type.value == 'text']) for slide in presentation.slides),
-                'num_image_items': sum(len([item for item in slide.items if item.type.value == 'image']) for slide in presentation.slides),
-                'slides': [{'slide_number': slide.slide_number, 'content': [item.content for item in slide.items]} for slide in presentation.slides]
+                'num_image_items': sum(len([item for item in slide.items if item.type.value == 'image' and item.content != "__DELETED__"]) for slide in presentation.slides),
+                'slides': [{'slide_number': slide.slide_number, 'content': [item.content for item in slide.items if item.content != "__DELETED__"]} for slide in presentation.slides]
             }
             
             quizzer_id = ss.homework_server.create_rag_quizzer(quizzer_data)
@@ -485,7 +541,7 @@ def generate_homework():
                     try:
                         import base64
                         image_bytes = base64.b64decode(question_data["image_bytes"])
-                        st.image(image_bytes, caption="Question Image", use_container_width=True)
+                        st.image(image_bytes, caption="Question Image", width=1000)
                     except Exception as e:
                         st.warning(f"Could not display image: {e}")
                 with st.expander(f"Answer {i}"):

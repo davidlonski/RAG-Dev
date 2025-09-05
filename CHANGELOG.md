@@ -11,6 +11,10 @@
 - **Better Navigation**: Enhanced batch navigation with clear batch numbering (e.g., "Batch 1 of 3")
 - **Improved Progress Tracking**: More accurate progress indicators and batch status display
 - **Proper Image Ordering**: Images are now presented in correct sequence based on slide number and order within slides
+- **Image Deletion Feature**: Teachers can now delete unwanted images from the presentation model
+- **Smart Filtering**: Deleted images are excluded from RAG collection creation and question generation
+- **Restore Functionality**: "Restore All" button allows teachers to bring back deleted images
+- **Image Size Optimization**: Images are now displayed at fixed widths (400px for description, 300px for questions) for better UI layout
 
 ### 🔧 Technical Improvements
 
@@ -20,10 +24,21 @@
 - **Better User Experience**: Teachers can now process any number of images using the same intuitive interface
 - **Enhanced Batch Calculations**: Improved batch numbering and total batch count display
 - **Image Sorting Logic**: Added proper sorting by slide number and order number to maintain presentation sequence
+- **Efficient Deletion Marking**: Images are marked as deleted by setting content to "__DELETED__" marker instead of rebuilding objects
+- **Direct Presentation Modification**: Deleted images are marked directly in the presentation model for better performance
 
 ### 📁 Files Modified
 
-- **`app/pages/1_Teacher_Portal.py`**: Updated `describe_images()` function to always use batch processing with max batch size of 10
+- **`app/pages/1_Teacher_Portal.py`**: 
+  - Updated `describe_images()` function to always use batch processing with max batch size of 10
+  - Added image deletion functionality with delete buttons for each image
+  - Created `mark_image_as_deleted()` function to mark images as deleted using "__DELETED__" content marker
+  - Updated image filtering to check for deletion markers instead of session state
+  - Added deletion status display and "Restore All" functionality
+- **`app/pptx_rag_quizzer/rag_core.py`**: 
+  - Updated `create_collection()` to skip images marked with "__DELETED__" content
+- **`app/pages/2_Student_Portal.py`**: 
+  - Updated image display to use fixed width (300px) for better UI layout
 
 ### 🎯 User Impact
 
@@ -32,6 +47,10 @@
 - **Better Efficiency**: Larger batch sizes reduce navigation overhead
 - **Clearer Progress**: Better understanding of current position in the image description process
 - **Simplified Workflow**: No more switching between different modes based on image count
+- **Image Control**: Teachers can remove irrelevant or problematic images from their presentations
+- **Quality Assurance**: Deleted images won't appear in generated questions or RAG collections
+- **Flexible Editing**: Easy restoration of accidentally deleted images with "Restore All" button
+- **Better UI Layout**: Images are now displayed at reasonable sizes for improved readability and interface organization
 
 ### 🔄 Configuration Updates
 
