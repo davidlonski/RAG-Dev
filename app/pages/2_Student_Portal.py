@@ -14,7 +14,12 @@ from pptx_rag_quizzer.quiz_master import QuizMaster
 from pptx_rag_quizzer.rag_core import RAGCore
 
 
-st.set_page_config(page_title="Student Portal", page_icon="🧑‍🎓", layout="wide")
+st.set_page_config(
+    page_title="Student Portal", 
+    page_icon="🧑‍🎓", 
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
 ss = st.session_state
 
@@ -367,23 +372,19 @@ if ss.current_user['role'] != 'student':
 st.title("🧑‍🎓 Student Portal")
 st.write(f"Welcome, {ss.current_user['first_name']} {ss.current_user['last_name']}!")
 
-with st.sidebar:
-    st.write(f"**Student:** {ss.current_user['first_name']} {ss.current_user['last_name']}")
-    st.write(f"**Username:** {ss.current_user['username']}")
-    
-    choice = st.radio("Navigate", ["assignments", "take"], index=0 if ss.page == "assignments" else 1)
-    if choice != ss.page:
-        ss.page = choice
-        st.rerun()
-    
-    # Logout button
-    if st.button("🚪 Logout"):
-        ss.current_user = None
-        st.switch_page("main.py")
+# User info
+st.write(f"**Student:** {ss.current_user['first_name']} {ss.current_user['last_name']}")
+st.write(f"**Username:** {ss.current_user['username']}")
 
 if ss.page == "assignments":
     view_assignments()
 elif ss.page == "take":
     take_assignment()
+
+# Logout button at bottom
+st.markdown("---")
+if st.button("🚪 Logout"):
+    ss.current_user = None
+    st.switch_page("main.py")
 
 

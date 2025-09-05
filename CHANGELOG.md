@@ -1,5 +1,46 @@
 # Changelog
 
+## [2025-01-27] - Enhanced Image Description Batch Processing
+
+### 🎯 Major Features Added
+
+#### **Improved Image Description Workflow**
+- **Always Batch Processing**: Removed one-by-one image description mode for better usability
+- **Increased Batch Size**: Changed from batches of 5 to maximum batch size of 10 images
+- **Unified Experience**: All image descriptions now use consistent batch interface regardless of image count
+- **Better Navigation**: Enhanced batch navigation with clear batch numbering (e.g., "Batch 1 of 3")
+- **Improved Progress Tracking**: More accurate progress indicators and batch status display
+- **Proper Image Ordering**: Images are now presented in correct sequence based on slide number and order within slides
+
+### 🔧 Technical Improvements
+
+#### **Code Simplification**
+- **Removed Conditional Logic**: Eliminated complex if/else branching between single and batch modes
+- **Consistent Processing**: All images now follow the same batch processing workflow
+- **Better User Experience**: Teachers can now process any number of images using the same intuitive interface
+- **Enhanced Batch Calculations**: Improved batch numbering and total batch count display
+- **Image Sorting Logic**: Added proper sorting by slide number and order number to maintain presentation sequence
+
+### 📁 Files Modified
+
+- **`app/pages/1_Teacher_Portal.py`**: Updated `describe_images()` function to always use batch processing with max batch size of 10
+
+### 🎯 User Impact
+
+#### **Teacher Experience**
+- **Consistent Interface**: Same workflow whether processing 3 images or 30 images
+- **Better Efficiency**: Larger batch sizes reduce navigation overhead
+- **Clearer Progress**: Better understanding of current position in the image description process
+- **Simplified Workflow**: No more switching between different modes based on image count
+
+### 🔄 Configuration Updates
+
+- **Batch Size**: Increased from 5 to 10 images per batch
+- **Processing Mode**: Always batch processing regardless of total image count
+- **Navigation**: Enhanced batch navigation with proper batch numbering
+
+---
+
 ## [2025-08-26] - Unified Image Storage System & Database Consolidation
 
 ### 🎯 Major Features Added

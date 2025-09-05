@@ -25,7 +25,7 @@ st.set_page_config(
     page_title="Teacher Dashboard",
     page_icon="🎓",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 ss = st.session_state
@@ -87,11 +87,6 @@ def upload_and_process_pptx():
         help="Select a PowerPoint file to process"
     )
     
-    # Add back button
-    if st.button("← Back to Dashboard"):
-        ss.app_stage = "dashboard"
-        st.rerun()
-    
     if uploaded_file is not None:
         
         with st.spinner("Processing PowerPoint file..."):
@@ -129,6 +124,11 @@ def upload_and_process_pptx():
                     
             except Exception as e:
                 st.error(f"❌ Error processing PowerPoint file: {e}")
+    
+    # Back button
+    if st.button("← Back to Dashboard"):
+        ss.app_stage = "dashboard"
+        st.rerun()
 
 def process_presentation(presentation):
     """Process the presentation and store in database"""
@@ -169,7 +169,15 @@ def describe_images():
     
     presentation, collection_id = ss.presentation_metadata
 
-    all_images = [item for slide in presentation.slides for item in slide.items if item.type.value == 'image']
+    # Extract all images and sort them by slide number and order number to maintain proper sequence
+    all_images = []
+    for slide in presentation.slides:
+        for item in slide.items:
+            if item.type.value == 'image':
+                all_images.append(item)
+    
+    # Sort images by slide number first, then by order number within each slide
+    all_images.sort(key=lambda img: (img.slide_number, img.order_number))
     total = len(all_images)
     
     if total == 0:
@@ -183,189 +191,130 @@ def describe_images():
         ss.current_image_index = 0
     
     idx = ss.current_image_index
+    
+    # Always use batch processing with max batch size of 10
+    BATCH_SIZE = 10
+    
+    # Calculate the current batch
+    batch_start = idx
+    batch_end = min(idx + BATCH_SIZE, total)
+    current_batch = all_images[batch_start:batch_end]
+    
+    # Calculate current batch number and total batches
+    current_batch_num = (batch_start // BATCH_SIZE) + 1
+    total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE  # Ceiling division
 
-    if total > 6:   # Process images in batches of 5
-        # Calculate the current batch
-        batch_start = idx
-        batch_end = min(idx + 5, total)
-        current_batch = all_images[batch_start:batch_end]
+    # Check if all images in current batch have descriptions
+    batch_ready = all(img_item.content and img_item.content.lower() not in ['none', 'null', ''] for img_item in current_batch)
 
-        # Check if all images in current batch have descriptions
-        batch_ready = all(img_item.content and img_item.content.lower() not in ['none', 'null', ''] for img_item in current_batch)
+    if not batch_ready:
+        # Show loading screen while generating descriptions
+        st.write(f"**Processing {total} images in batches of {BATCH_SIZE}**")
+        st.progress((idx + 1) / total)
+        st.write(
+                f"**Generating descriptions for images {batch_start + 1} to {batch_end}...**"
+        )
 
-        if not batch_ready:
-            # Show loading screen while generating descriptions
-            st.write(f"**Processing {total} images in batches of 5**")
-            st.progress((idx + 1) / total)
-            st.write(
-                    f"**Generating descriptions for images {batch_start + 1} to {batch_end}...**"
-            )
-
-            with st.spinner("AI is analyzing images and generating descriptions. This may take up to 1 minute per image..."):
-                for i, img_item in enumerate(current_batch):
-                    if not img_item.content or img_item.content.lower() in ['none', 'null', '']:
-                        try:
-                            st.write(
-                                f"Describing image {batch_start + i + 1} of {total}..."
-                            )
-                            image_description = ss.image_magic.describe_image(
-                                img_item.image_bytes,
-                                img_item.extension,
-                                img_item.slide_number,
-                                collection_id
-                            )
-                            st.write(f"Raw description: {image_description}")
-                            
-                            if image_description and image_description != "None":
-                                img_item.content = image_description
-                                st.write(
-                                    f"✓ Image {batch_start + i + 1} described successfully"
-                                )
-                            else:
-                                img_item.content = "No description available"
-                                st.write(
-                                    f"⚠️ No description generated for image {batch_start + i + 1}"
-                                )
-                        except Exception as e:
-                            image_description = f"Error describing image: {e}"
+        with st.spinner("AI is analyzing images and generating descriptions. This may take up to 1 minute per image..."):
+            for i, img_item in enumerate(current_batch):
+                if not img_item.content or img_item.content.lower() in ['none', 'null', '']:
+                    try:
+                        st.write(
+                            f"Describing image {batch_start + i + 1} of {total}..."
+                        )
+                        image_description = ss.image_magic.describe_image(
+                            img_item.image_bytes,
+                            img_item.extension,
+                            img_item.slide_number,
+                            collection_id
+                        )
+                        
+                        # if image_description starts with "Description: " remove it
+                        if image_description and image_description.startswith("Description: "):
+                            image_description = image_description[len("Description: "):]
+                        
+                        if image_description and image_description != "None":
                             img_item.content = image_description
                             st.write(
-                                f"✗ Error describing image {batch_start + i + 1}: {e}"
+                                f"✓ Image {batch_start + i + 1} described successfully"
                             )
+                        else:
+                            img_item.content = "No description available"
+                            st.write(
+                                f"⚠️ No description generated for image {batch_start + i + 1}"
+                            )
+                    except Exception as e:
+                        image_description = f"Error describing image: {e}"
+                        img_item.content = image_description
+                        st.write(
+                            f"✗ Error describing image {batch_start + i + 1}: {e}"
+                        )
 
-            st.success("All descriptions generated! Displaying images...")
-            st.rerun()
-        else:
-            # Display current batch of images with descriptions
-            st.write(
-                f"**Batch {batch_start // 5 + 1}: Images {batch_start + 1} to {batch_end} of {total}**"
-            )
-            st.progress((batch_end) / total)
-
-            for i, img_item in enumerate(current_batch):
-                st.write(
-                    f"**Image {batch_start + i + 1} of {total}** (from Slide {img_item.slide_number})"
-                )
-                st.image(
-                    Image.open(io.BytesIO(img_item.image_bytes)),
-                    use_container_width=True,
-                )
-
-                # Text area for each image with pre-generated description
-                description = st.text_area(
-                    f"What is important about image {batch_start + i + 1}?",
-                    key=f"desc_{img_item.id}",
-                    value=img_item.content,
-                )
-                img_item.content = description
-                st.write("---")
-
-            # Navigation buttons for batch processing
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                if batch_start > 0:
-                    if st.button("Previous Batch", key="prev_batch"):
-                        ss.current_image_index = max(0, batch_start - 5)
-                        st.rerun()
-
-            with col2:
-                if st.button("Save Batch", key="save_batch"):
-                    # Save all descriptions in current batch
-                    for img_item in current_batch:
-                        if img_item.content:
-                            img_item.content = img_item.content
-                    st.success("Batch saved!")
-
-            with col3:
-                if batch_end < total:
-                    if st.button("Next Batch", key="next_batch"):
-                        ss.current_image_index = batch_end
-                        st.rerun()
-                else:
-                    # Verify all images have descriptions before finishing
-                    all_described = all(
-                        img.content and img.content.lower() not in ['none', 'null', ''] 
-                        for img in all_images
-                    )
-                    
-                    if all_described:
-                        if st.button("Finish", key="finish"):
-                            ss.app_stage = "build_quiz_rag"
-                            st.rerun()
-                    else:
-                        st.warning("Please ensure all images have descriptions before finishing.")
-                        if st.button("Force Finish", key="force_finish"):
-                            ss.app_stage = "build_quiz_rag"
-                            st.rerun()
+        st.success("All descriptions generated! Displaying images...")
+        st.rerun()
     else:
-        # Original single image processing for 6 or fewer images
-        if idx < total:
-            img_item = all_images[idx]
-            st.progress((idx + 1) / total)
+        # Display current batch of images with descriptions
+        st.write(
+            f"**Batch {current_batch_num} of {total_batches}: Images {batch_start + 1} to {batch_end} of {total}**"
+        )
+        st.progress((batch_end) / total)
+
+        for i, img_item in enumerate(current_batch):
             st.write(
-                f"**Image {idx + 1} of {total}** (from Slide {img_item.slide_number})"
+                f"**Image {batch_start + i + 1} of {total}** (from Slide {img_item.slide_number})"
             )
             st.image(
                 Image.open(io.BytesIO(img_item.image_bytes)),
                 use_container_width=True,
             )
 
-            # Only generate description if it doesn't already exist
-            if not img_item.content or img_item.content.lower() in ['none', 'null', '']:
-                try:
-                    st.write(f"Generating description for image {idx + 1}...")
-                    image_description = ss.image_magic.describe_image(
-                        img_item.image_bytes,
-                        img_item.extension,
-                        img_item.slide_number,
-                        collection_id
-                    )
-                    st.write(f"Raw description: {image_description}")
-                    
-                    if image_description and image_description != "None":
-                        img_item.content = image_description
-                        st.success(f"✓ Description generated successfully")
-                    else:
-                        img_item.content = "No description available"
-                        st.warning("⚠️ No description generated")
-                        
-                except Exception as e:
-                    st.error(f"Error describing image {idx + 1}: {e}")
-                    img_item.content = f"Error: {e}"
-            else:
-                image_description = img_item.content
-
+            # Text area for each image with pre-generated description
             description = st.text_area(
-                "What is important about this image?",
+                f"What is important about image {batch_start + i + 1}?",
                 key=f"desc_{img_item.id}",
-                value=image_description,
+                value=img_item.content,
             )
+            img_item.content = description
+            st.write("---")
 
-            if st.button("Submit Description", key=f"submit_{idx}"):
-                if description:
-                    # Update description in the image object
-                    img_item.content = description
-                    ss.current_image_index += 1
+        # Navigation buttons for batch processing
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            if batch_start > 0:
+                if st.button("Previous Batch", key="prev_batch"):
+                    ss.current_image_index = max(0, batch_start - BATCH_SIZE)
                     st.rerun()
-                else:
-                    st.warning("Please provide a description.")
-        else:
-            # Verify all images have descriptions before transitioning
-            all_described = all(
-                img.content and img.content.lower() not in ['none', 'null', ''] 
-                for img in all_images
-            )
-            
-            if all_described:
-                st.success("All images described!")
-                ss.app_stage = "build_quiz_rag"
-                st.rerun()
+
+        with col2:
+            if st.button("Save Batch", key="save_batch"):
+                # Save all descriptions in current batch
+                for img_item in current_batch:
+                    if img_item.content:
+                        img_item.content = img_item.content
+                st.success("Batch saved!")
+
+        with col3:
+            if batch_end < total:
+                if st.button("Next Batch", key="next_batch"):
+                    ss.current_image_index = batch_end
+                    st.rerun()
             else:
-                st.warning("Please ensure all images have descriptions before proceeding.")
-                if st.button("Force Continue", key="force_continue"):
-                    ss.app_stage = "build_quiz_rag"
-                    st.rerun()
+                # Verify all images have descriptions before finishing
+                all_described = all(
+                    img.content and img.content.lower() not in ['none', 'null', ''] 
+                    for img in all_images
+                )
+                
+                if all_described:
+                    if st.button("Finish", key="finish"):
+                        ss.app_stage = "build_quiz_rag"
+                        st.rerun()
+                else:
+                    st.warning("Please ensure all images have descriptions before finishing.")
+                    if st.button("Force Finish", key="force_finish"):
+                        ss.app_stage = "build_quiz_rag"
+                        st.rerun()
 
     
 def process_quiz_rag():
