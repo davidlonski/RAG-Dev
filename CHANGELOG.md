@@ -14,6 +14,11 @@
 - **Better Visual Balance**: Improved button proportions for better user experience
 - **Consistent Sizing**: All action buttons now have uniform width regardless of text length
 
+### 📊 Teacher Portal Enhancements
+- **Show Correct Answers**: Added correct answer display in assignment results view for better grading context
+- **Improved Answer Comparison**: Teachers can now see both correct answers and student responses side by side
+- **Enhanced Grading Experience**: Better visibility into question expectations and student performance
+
 ## [2025-01-27] - Enhanced Image Description Batch Processing
 
 ### 🎯 Major Features Added

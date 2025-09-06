@@ -390,7 +390,6 @@ st.title("🧑‍🎓 Student Portal")
 st.write(f"Welcome, {ss.current_user['first_name']} {ss.current_user['last_name']}!")
 
 # User info
-st.write(f"**Student:** {ss.current_user['first_name']} {ss.current_user['last_name']}")
 st.write(f"**Username:** {ss.current_user['username']}")
 
 if ss.page == "assignments":

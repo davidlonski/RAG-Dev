@@ -726,10 +726,14 @@ def view_assignment_results():
                         if question.get('type') == 'image':
                             st.caption("📷 Image-based question")
                         
+                        # Show correct answer first
+                        st.success(f"**✅ Correct Answer:** {question.get('answer', 'No answer available')}")
+                        st.write("---")
+                        
                         for attempt_num, attempt in enumerate(attempts, 1):
                             st.write(f"**Attempt {attempt_num}:**")
                             
-                            st.write(f"**Answer:** {attempt['student_answer']}")
+                            st.write(f"**Student Answer:** {attempt['student_answer']}")
                             st.write(f"**Grade:** {attempt['grade']}/2")
                             if attempt['feedback']:
                                 st.info(f"**Feedback:** {attempt['feedback']}")
