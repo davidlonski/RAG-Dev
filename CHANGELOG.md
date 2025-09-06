@@ -1,5 +1,19 @@
 # Changelog
 
+## [2025-01-27] - UI Improvements and Bug Fixes
+
+### 🐛 Bug Fixes
+- **Fixed Division by Zero Error**: Resolved crash when all images are deleted during description phase
+- **Progress Bar Protection**: Added checks to prevent division by zero in progress calculations
+- **Graceful Error Handling**: Application now handles edge cases when no images remain
+
+### 🎨 UI/UX Improvements
+- **Fixed Button Width**: Set consistent 200px width for all action buttons using custom CSS
+- **Cross-Portal Consistency**: Applied same button styling to both teacher and student portals
+- **Selective Full-Width Buttons**: Kept full-width styling only for navigation and back buttons where appropriate
+- **Better Visual Balance**: Improved button proportions for better user experience
+- **Consistent Sizing**: All action buttons now have uniform width regardless of text length
+
 ## [2025-01-27] - Enhanced Image Description Batch Processing
 
 ### 🎯 Major Features Added

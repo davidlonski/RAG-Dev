@@ -28,6 +28,23 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Custom CSS for consistent button sizing
+st.markdown("""
+<style>
+    /* Set fixed width for all buttons except those with use_container_width */
+    .stButton > button:not([data-testid="baseButton-secondary"]) {
+        width: 200px !important;
+        min-width: 200px !important;
+        max-width: 200px !important;
+    }
+    
+    /* Keep full width for navigation buttons */
+    .stButton > button[data-testid="baseButton-secondary"] {
+        width: 100% !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 ss = st.session_state
 
 # Initialize session state
@@ -82,7 +99,7 @@ def upload_and_process_pptx():
     
     
     # Back button
-    if st.button("← Back to Dashboard"):
+    if st.button("← Back to Dashboard", use_container_width=True):
         ss.app_stage = "dashboard"
         st.rerun()
         
@@ -122,7 +139,7 @@ def upload_and_process_pptx():
                 with col2:
                     st.write("**Process PPTX:**")
                     
-                    if st.button("🚀 Process Presentation", type="primary"):
+                    if st.button("🚀 Process Presentation", type="primary", key="process_btn"):
                         process_presentation(presentation)
                 
                 
@@ -167,7 +184,7 @@ def describe_images():
     st.header("📋 Describe Images")
     
     # Add back button
-    if st.button("← Back to Upload", key="describe_back"):
+    if st.button("← Back to Upload", key="describe_back", use_container_width=True):
         ss.app_stage = "upload_pptx"
         st.rerun()
     
@@ -202,7 +219,7 @@ def describe_images():
         with col1:
             st.warning(f"⚠️ {deleted_count} image(s) have been deleted and will not be processed.")
         with col2:
-            if st.button("🔄 Restore All", key="restore_all", help="Restore all deleted images"):
+            if st.button("🔄 Restore All", key="restore_all", help="Restore all deleted images", use_container_width=True):
                 # Restore all deleted images by resetting their content
                 for slide in presentation.slides:
                     for item in slide.items:
@@ -378,7 +395,7 @@ def process_quiz_rag():
     st.header("📋 Process Quiz and RAG")
     
     # Add back button
-    if st.button("← Back to Describe Images", key="quiz_back"):
+    if st.button("← Back to Describe Images", key="quiz_back", use_container_width=True):
         ss.app_stage = "describe_images"
         st.rerun()
     
@@ -443,7 +460,7 @@ def generate_homework():
     
     if not rag_quizzers:
         st.warning("⚠️ No presentations uploaded yet. Please upload a PowerPoint file first.")
-        if st.button("← Back to Dashboard", key="generate_back1"):
+        if st.button("← Back to Dashboard", key="generate_back1", use_container_width=True):
             ss.app_stage = "dashboard"
             st.rerun()
         return
@@ -575,7 +592,7 @@ def generate_homework():
                     st.rerun()
 
     # Back button
-    if st.button("← Back to Dashboard", key="generate_back2"):
+    if st.button("← Back to Dashboard", key="generate_back2", use_container_width=True):
         ss.app_stage = "dashboard"
         st.rerun()
 
@@ -626,7 +643,7 @@ def manage_assignments():
                         else:
                             st.error("❌ Failed to delete assignment.")
     # Back button
-    if st.button("← Back to Dashboard", key="manage_back"):
+    if st.button("← Back to Dashboard", key="manage_back", use_container_width=True):
         ss.app_stage = "dashboard"
         st.rerun()
 
@@ -648,7 +665,7 @@ def view_assignment_results():
     
     if not submissions:
         st.info("📝 No students have submitted this assignment yet.")
-        if st.button("← Back to Manage Assignments", key="results_back1"):
+        if st.button("← Back to Manage Assignments", key="results_back1", use_container_width=True):
             ss.app_stage = "manage_assignments"
             st.rerun()
         return
@@ -721,7 +738,7 @@ def view_assignment_results():
                 st.info("No answers recorded for this submission.")
     
     # Back button
-    if st.button("← Back to Manage Assignments", key="results_back2"):
+    if st.button("← Back to Manage Assignments", key="results_back2", use_container_width=True):
         ss.app_stage = "manage_assignments"
         st.rerun()
 
@@ -735,7 +752,7 @@ def remove_powerpoint():
     
     if not rag_quizzers:
         st.warning("⚠️ No presentations to remove.")
-        if st.button("← Back to Dashboard", key="remove_back1"):
+        if st.button("← Back to Dashboard", key="remove_back1", use_container_width=True):
             ss.app_stage = "dashboard"
             st.rerun()
         return
@@ -779,7 +796,7 @@ def remove_powerpoint():
                         st.write(f"Slide {slide.slide_number}: {len(slide_texts)} texts, {len(slide_images)} images")
     
     # Back button
-    if st.button("← Back to Dashboard", key="remove_back"):
+    if st.button("← Back to Dashboard", key="remove_back", use_container_width=True):
         ss.app_stage = "dashboard"
         st.rerun()
 

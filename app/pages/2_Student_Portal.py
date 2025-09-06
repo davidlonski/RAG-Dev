@@ -21,6 +21,23 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Custom CSS for consistent button sizing
+st.markdown("""
+<style>
+    /* Set fixed width for all buttons except those with use_container_width */
+    .stButton > button:not([data-testid="baseButton-secondary"]) {
+        width: 200px !important;
+        min-width: 200px !important;
+        max-width: 200px !important;
+    }
+    
+    /* Keep full width for navigation buttons */
+    .stButton > button[data-testid="baseButton-secondary"] {
+        width: 100% !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 ss = st.session_state
 
 # Initialize session state
