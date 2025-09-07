@@ -1,155 +1,226 @@
-# RAG Homework Generator
+# RAG-Dev: Retrieval-Augmented Generation Quiz Application
 
-A Streamlit application that allows teachers to upload PowerPoint presentations, describe images using AI, and generate interactive homework assignments that students can download and complete.
+A comprehensive RAG (Retrieval-Augmented Generation) application built with Python, using ChromaDB as the vector store, Google's Gemini LLM API for response generation, and Streamlit for the frontend. The application now includes a complete user management system with teacher and student portals.
 
-## Overview
+## 🎯 Features
 
-This application uses Retrieval-Augmented Generation (RAG) technology to create intelligent homework assignments from PowerPoint presentations. Teachers can upload presentations, have AI assist with image descriptions, and generate Excel spreadsheets with embedded images and questions for students.
+### **User Management System**
+- **Multi-User Authentication**: Login/registration system with teacher and student roles
+- **Role-Based Access Control**: Separate portals for different user types
+- **Database Persistence**: User data stored in MySQL with proper relationships
+- **Session Management**: Secure user state across application sessions
 
-## User Flow
+### **RAG Quizzer System**
+- **PowerPoint Processing**: Upload and process PPTX files with text and image extraction
+- **AI-Powered Question Generation**: Generate text and image-based questions using Gemini LLM
+- **Database Persistence**: RAG quizzer data stored in MySQL (no more session state loss)
+- **Teacher Isolation**: Each teacher sees only their own presentations and assignments
 
-### Teacher Workflow:
-1. **Role Selection** - Choose "Teacher" role
-2. **Upload PowerPoint** - Upload a .pptx document
-3. **AI Image Analysis** - AI automatically describes images found in the presentation
-4. **Batch Image Review** - Review and edit AI-generated descriptions in batches (5 images at a time)
-5. **RAG Processing** - Content is processed through RAG for intelligent question generation
-6. **Generate Excel Spreadsheet** - Creates an Excel file with embedded images and questions
-7. **Download & Share** - Download the Excel file and share with students
+### **Homework Management**
+- **Assignment Creation**: Teachers can create homework assignments from presentations
+- **Question Types**: Support for text-based and image-based questions
+- **Student Submissions**: Students can take assignments with multiple attempts
+- **Grading System**: AI-powered grading with feedback
 
-### Student Workflow:
-1. **Role Selection** - Choose "Student" role
-2. **Access Homework** - View available homework assignments
-3. **Download Excel File** - Download the homework Excel file
-4. **Complete Assignment** - Answer questions directly in the Excel file
-5. **Submit Work** - Save and submit completed homework
+### **Technical Features**
+- **ChromaDB Integration**: Vector database for document embeddings
+- **Gemini LLM API**: Advanced question generation and grading
+- **MySQL Database**: Reliable data persistence
+- **Streamlit UI**: Modern, responsive web interface
 
-## Features
+## 🚀 Quick Start
 
-- **Dual Role Interface**: Separate workflows for teachers and students
-- **AI-Powered Image Analysis**: Automatic image description using Google Gemini
-- **Batch Processing**: Efficient handling of large presentations with batch image processing
-- **RAG-Powered Questions**: Intelligent question generation from PowerPoint content
-- **Excel Export with Images**: Embedded images in Excel spreadsheets for visual questions
-- **Mixed Question Types**: Both text-based and image-based questions
-- **Session State Management**: Maintains progress across interactions
-- **Responsive Design**: Works on different screen sizes
-- **Error Handling**: Robust error handling with retry mechanisms for API calls
+### Prerequisites
+- Python 3.8+
+- MySQL Database
+- ChromaDB Server
+- Google Gemini API Key
 
-## Installation
+### Installation
 
-1. Clone the repository:
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd RAG-Dev
+   ```
+
+2. **Set up virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure environment variables**
+   Create a `.env` file in the root directory:
+   ```env
+   # Database Configuration
+   HOMEWORK_DB_HOST=localhost
+   HOMEWORK_DB_USER=your_username
+   HOMEWORK_DB_PASS=your_password
+   HOMEWORK_DB_NAME=your_database
+
+   # ChromaDB Configuration
+   CHROMA_SERVER_HOST=localhost
+   CHROMA_SERVER_HTTP_PORT=8000
+
+   # Google Gemini API
+   GOOGLE_API_KEY=your_gemini_api_key
+   ```
+
+5. **Run database migrations**
+   ```bash
+   
+   ```
+
+6. **Start the application**
+   ```bash
+   cd app
+   streamlit run main.py
+   ```
+
+## 👥 User Roles
+
+### **Teacher Portal**
+- Upload PowerPoint presentations
+- Process and describe images
+- Generate homework assignments
+- Manage assignments and view results
+- Remove presentations
+
+### **Student Portal**
+- View available assignments
+- Take assignments with multiple attempts
+- Receive AI-powered grading and feedback
+- Track progress and scores
+
+## 📁 Project Structure
+
+```
+RAG-Dev/
+├── app/
+│   ├── main.py                    # Login/registration entry point
+│   ├── pages/
+│   │   ├── 1_Teacher_Portal.py   # Teacher dashboard
+│   │   └── 2_Student_Portal.py   # Student portal
+│   ├── database/
+│   │   ├── user_db.py            # User CRUD operations
+│   │   ├── homework_db.py        # Homework and RAG quizzer CRUD operations
+│   │   └── image_db.py           # Image storage
+│   ├── pptx_rag_quizzer/
+│   │   ├── rag_core.py           # Core RAG functionality
+│   │   ├── quiz_master.py        # Question generation
+│   │   ├── image_magic.py        # Image processing
+│   │   ├── file_parser.py        # PowerPoint parsing
+│   │   └── presentation_model.py # Data models
+│   └── requirements.txt
+├── tests/                        # Test files
+├── CHANGELOG.md                  # Change history
+└── README.md                     # This file
+```
+
+## 🔧 Database Schema
+
+### **Core Tables**
+- **users**: User accounts with roles (teacher/student)
+- **rag_quizzers**: PowerPoint presentations and metadata
+- **rag_quizzer_slides**: Slide content and structure
+- **assignments**: Homework assignments linked to teachers
+- **questions**: Individual questions within assignments
+- **submissions**: Student assignment attempts
+- **submission_answers**: Individual question responses
+
+### **Key Relationships**
+- Teachers own presentations and assignments
+- Students submit assignments
+- Questions belong to assignments
+- Answers belong to submissions
+
+## 🧪 Testing
+
+### **Default Accounts**
+After running migrations, default accounts are created:
+- **Teacher**: username=`teacher`, password=`teacher123`
+- **Student**: username=`student`, password=`student123`
+
+### **Test Scripts**
 ```bash
-git clone <repository-url>
-cd RAG-Dev
-```
-
-2. Install dependencies:
-```bash
-pip install -r app/requirements.txt
-```
-
-3. Set up environment variables:
-```bash
-# Create a .env file in the app directory
-cp app/.env.example app/.env
-# Add your Google Gemini API key to app/.env
-GOOGLE_API_KEY=your_api_key_here
-```
-
-4. Run the application:
-```bash
-streamlit run app/app.py
-```
-
-## Usage
-
-### For Teachers:
-1. Select "I'm a Teacher" role
-2. Upload your PowerPoint presentation (.pptx format)
-3. Wait for AI to analyze and describe images automatically
-4. Review and edit image descriptions in batches
-5. Generate an Excel spreadsheet with questions and embedded images
-6. Download and share the Excel file with your students
-
-### For Students:
-1. Select "I'm a Student" role
-2. View available homework assignments
-3. Download the Excel file from your teacher
-4. Complete the questions directly in the Excel file
-5. Save and submit your completed homework
-
-## Technology Stack
-
-- **Streamlit**: Web application framework
-- **Google Gemini**: AI-powered image analysis and question generation
-- **ChromaDB**: Vector database for RAG functionality
-- **OpenPyXL**: Excel spreadsheet generation with embedded images
-- **Pillow (PIL)**: Image processing and manipulation
-- **python-pptx**: PowerPoint file parsing
-- **Sentence Transformers**: Text embedding for RAG
-- **Tesseract**: OCR for image text extraction
-
-## File Structure
 
 ```
-app/
-├── app.py                 # Main Streamlit application
-├── requirements.txt       # Python dependencies
-├── pptx_rag_quizzer/     # Core RAG functionality
-│   ├── rag_controller.py # Main RAG controller
-│   ├── rag_core.py       # RAG core implementation
-│   ├── quiz_master.py    # Question generation logic
-│   ├── image_magic.py    # Image processing utilities
-│   ├── file_parser.py    # PowerPoint parsing
-│   └── utils.py          # Utility functions
-└── chroma_db/           # Vector database storage
+
+## 🔄 Workflow
+
+### **Teacher Workflow**
+1. **Login** as teacher
+2. **Upload PowerPoint** file
+3. **Process images** (auto-describe or manual)
+4. **Generate homework** with questions
+5. **Save assignment** to database
+6. **Manage assignments** and view results
+
+### **Student Workflow**
+1. **Login** as student
+2. **View available assignments**
+3. **Take assignment** with multiple attempts
+4. **Receive grading** and feedback
+5. **Track progress** and scores
+
+## 🐛 Troubleshooting
+
+### **Common Issues**
+
+1. **Database Connection Errors**
+   - Verify MySQL server is running
+   - Check database credentials in `.env`
+   - Ensure database exists
+
+2. **ChromaDB Connection Issues**
+   - Verify ChromaDB server is running
+   - Check host and port in `.env`
+   - Restart ChromaDB if needed
+
+3. **API Key Issues**
+   - Verify Google Gemini API key is valid
+   - Check API quota and limits
+   - Ensure key has proper permissions
+
+4. **Page Navigation Errors**
+   - Clear browser cache
+   - Restart Streamlit application
+   - Check file paths in navigation
+
+### **Debug Mode**
+Enable debug information by setting environment variables:
+```env
+DEBUG=true
+LOG_LEVEL=DEBUG
 ```
 
-## Configuration
+## 🤝 Contributing
 
-The application requires a Google Gemini API key for AI functionality. Set this in your `.env` file:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-```
-GOOGLE_API_KEY=your_api_key_here
-```
+## 📄 License
 
-## Features in Detail
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-### AI Image Analysis
-- Automatic image description generation using Google Gemini
-- Batch processing for efficiency with large presentations
-- Teacher review and editing capabilities
-- Error handling with retry mechanisms
+## 🔮 Roadmap
 
-### RAG Question Generation
-- Intelligent question generation from PowerPoint content
-- Mix of text-based and image-based questions
-- Context-aware question creation
-- Rate limiting and quota management
-
-### Excel Integration
-- Embedded images in Excel spreadsheets
-- Formatted questions with proper text wrapping
-- Professional layout with headers and styling
-- Direct download functionality
-
-### Session Management
-- Progress tracking across application stages
-- State persistence during image processing
-- Batch navigation and saving
-- Role-based interface switching
-
-## Troubleshooting
-
-### Common Issues:
-1. **API Rate Limits**: The app includes retry logic for API quota exhaustion
-2. **Large Presentations**: Batch processing handles presentations with many images
-3. **Image Format Issues**: Automatic image validation and conversion
-4. **Memory Usage**: Efficient processing with streaming and cleanup
-
-### Getting Help:
-- Check that your Google Gemini API key is correctly set
-- Ensure all dependencies are installed from `app/requirements.txt`
-- Verify PowerPoint files are in .pptx format
-- Check console output for detailed error messages
+- [ ] Advanced authentication (JWT, OAuth)
+- [ ] Assignment sharing between teachers
+- [ ] Analytics dashboard
+- [ ] Bulk import/export
+- [ ] Real-time collaboration
+- [ ] Mobile-responsive design
+- [ ] API endpoints for external integration
+- [ ] Advanced question types (multiple choice, matching)
+- [ ] Student performance analytics
+- [ ] Assignment templates and libraries

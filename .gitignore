@@ -1,5 +1,30 @@
 venv/
 __pycache__/
 *.pptx
-*.drawio
 chroma_db/
+chroma_db_env/
+.env
+/chroma-db-env
+/chroma-db
+.vscode/settings.json
+.cursor/
+
+# Additional cache and test patterns
+.pytest_cache/
+*.pyc
+*.pyo
+*.pyd
+.coverage
+htmlcov/
+.tox/
+.nox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+
+# Temporary files
+github-summary.md
+*.session.sql
+local-hwdb.session.sql
