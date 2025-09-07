@@ -25,6 +25,16 @@
 - **Editable Feedback**: Students can view and edit their previous feedback submissions
 - **Improved Learning Experience**: Feedback collection helps improve future assignment design
 
+### 🔐 Authentication Improvements
+- **Default Student Role**: Registration now automatically assigns "student" role to new users
+- **Simplified Registration**: Removed role selection dropdown for cleaner user experience
+- **Streamlined Onboarding**: New users are automatically directed to student portal
+- **Enhanced Field Validation**: Added comprehensive validation for all registration fields
+- **Required Email**: Email is now mandatory for account creation
+- **Input Sanitization**: All fields are trimmed and validated before account creation
+- **Email-Based Authentication**: Removed username field, users now login with email
+- **Auto-Generated Usernames**: Usernames are automatically generated from email addresses
+
 ## [2025-01-27] - Enhanced Image Description Batch Processing
 
 ### 🎯 Major Features Added

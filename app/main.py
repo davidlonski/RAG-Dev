@@ -30,7 +30,7 @@ def login_page():
     st.write("Please enter your credentials to access the system.")
     
     with st.form("login_form"):
-        username = st.text_input("Username", placeholder="Enter your username")
+        email = st.text_input("Email", placeholder="Enter your email")
         password = st.text_input("Password", type="password", placeholder="Enter your password")
         
         col1, col2 = st.columns(2)
@@ -42,7 +42,9 @@ def login_page():
                 st.rerun()
         
         if submit_button:
-            if username and password:
+            if email and password:
+                # Generate username from email for authentication
+                username = email.strip().split('@')[0]
                 user = ss.user_server.authenticate_user(username, password)
                 if user:
                     ss.current_user = user
@@ -55,9 +57,9 @@ def login_page():
                     else:
                         st.switch_page("pages/2_Student_Portal.py")
                 else:
-                    st.error("❌ Invalid username or password. Please try again.")
+                    st.error("❌ Invalid email or password. Please try again.")
             else:
-                st.warning("⚠️ Please enter both username and password.")
+                st.warning("⚠️ Please enter both email and password.")
 
 def register_page():
     """Display the registration form"""
@@ -70,14 +72,14 @@ def register_page():
         with col1:
             first_name = st.text_input("First Name", placeholder="Enter your first name")
             last_name = st.text_input("Last Name", placeholder="Enter your last name")
-            email = st.text_input("Email (Optional)", placeholder="Enter your email")
+            email = st.text_input("Email", placeholder="Enter your email")
         
         with col2:
-            username = st.text_input("Username", placeholder="Choose a username")
             password = st.text_input("Password", type="password", placeholder="Choose a password")
             confirm_password = st.text_input("Confirm Password", type="password", placeholder="Confirm your password")
         
-        role = st.selectbox("Role", ["student", "teacher"], help="Select your role in the system")
+        # Role is automatically set to student
+        role = "student"
         
         col1, col2 = st.columns(2)
         with col1:
@@ -89,20 +91,31 @@ def register_page():
         
         if submit_button:
             # Validate form
-            if not all([first_name, last_name, username, password, confirm_password]):
+            if not all([first_name, last_name, email, password, confirm_password]):
                 st.error("❌ Please fill in all required fields.")
+            elif not email or not email.strip():
+                st.error("❌ Email is required.")
+            elif not first_name.strip():
+                st.error("❌ First name cannot be empty.")
+            elif not last_name.strip():
+                st.error("❌ Last name cannot be empty.")
             elif password != confirm_password:
                 st.error("❌ Passwords do not match.")
             elif len(password) < 6:
                 st.error("❌ Password must be at least 6 characters long.")
+            elif not email.strip().count('@') == 1 or not email.strip().count('.') >= 1:
+                st.error("❌ Please enter a valid email address.")
             else:
+                # Generate username from email (part before @)
+                username = email.strip().split('@')[0]
+                
                 # Create user
                 user_data = {
                     'username': username,
                     'password': password,
-                    'email': email if email else None,
-                    'first_name': first_name,
-                    'last_name': last_name,
+                    'email': email.strip(),
+                    'first_name': first_name.strip(),
+                    'last_name': last_name.strip(),
                     'role': role
                 }
                 
