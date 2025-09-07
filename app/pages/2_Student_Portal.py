@@ -166,7 +166,53 @@ def display_completed_assignment(assignment, submission):
         else:
             st.warning("No attempts recorded for this question.")
     
-    # Only show back button for completed assignments
+    # Student feedback section
+    st.markdown("---")
+    st.subheader("📝 Assignment Feedback")
+    st.write("Please share your thoughts about this assignment to help improve future learning experiences.")
+    
+    # Check if feedback already exists
+    existing_feedback = submission.get('student_feedback', '')
+    
+    if existing_feedback:
+        st.info(f"**Your previous feedback:** {existing_feedback}")
+        if st.button("Edit Feedback", key="edit_feedback"):
+            ss.editing_feedback = True
+            st.rerun()
+    else:
+        ss.editing_feedback = True
+    
+    if ss.get('editing_feedback', False):
+        feedback = st.text_area(
+            "Share your feedback about this assignment:",
+            value=existing_feedback,
+            height=100,
+            placeholder="e.g., What did you find challenging? What was helpful? Any suggestions for improvement?",
+            key="feedback_input"
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Save Feedback", key="save_feedback"):
+                if feedback.strip():
+                    success = ss.homework_server.update_student_feedback(submission['id'], feedback.strip())
+                    if success:
+                        st.success("✅ Feedback saved successfully!")
+                        ss.editing_feedback = False
+                        # Refresh submission data
+                        ss.submission = ss.homework_server.get_completed_submission(ss.current_user['id'], assignment['id'])
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to save feedback. Please try again.")
+                else:
+                    st.warning("⚠️ Please enter some feedback before saving.")
+        
+        with col2:
+            if st.button("Cancel", key="cancel_feedback"):
+                ss.editing_feedback = False
+                st.rerun()
+    
+    # Back button
     if st.button("← Back to Assignments", key="student_back1"):
         ss.page = "assignments"
         st.rerun()

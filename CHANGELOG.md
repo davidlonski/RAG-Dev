@@ -18,6 +18,12 @@
 - **Show Correct Answers**: Added correct answer display in assignment results view for better grading context
 - **Improved Answer Comparison**: Teachers can now see both correct answers and student responses side by side
 - **Enhanced Grading Experience**: Better visibility into question expectations and student performance
+- **Student Feedback Display**: Teachers can now view student feedback about assignments in the results view
+
+### 🎓 Student Portal Enhancements
+- **Assignment Feedback System**: Students can now provide feedback after completing assignments
+- **Editable Feedback**: Students can view and edit their previous feedback submissions
+- **Improved Learning Experience**: Feedback collection helps improve future assignment design
 
 ## [2025-01-27] - Enhanced Image Description Batch Processing
 

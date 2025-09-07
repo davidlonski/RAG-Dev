@@ -423,7 +423,7 @@ class HomeworkServer:
                 return None
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
-                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status "
+                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status, student_feedback "
                 "FROM submissions WHERE student_id = %s AND assignment_id = %s AND status = 'completed' ORDER BY id DESC LIMIT 1",
                 (student_id, assignment_id),
             )
@@ -443,7 +443,7 @@ class HomeworkServer:
                 return None
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
-                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status "
+                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status, student_feedback "
                 "FROM submissions WHERE student_id = %s AND assignment_id = %s AND status = 'in_progress' ORDER BY id DESC LIMIT 1",
                 (student_id, assignment_id),
             )
@@ -463,7 +463,7 @@ class HomeworkServer:
                 return []
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
-                "SELECT s.id, s.student_id, s.assignment_id, s.started_at, s.completed_at, s.overall_score, s.summary, s.status, "
+                "SELECT s.id, s.student_id, s.assignment_id, s.started_at, s.completed_at, s.overall_score, s.summary, s.status, s.student_feedback, "
                 "u.first_name, u.last_name, u.username "
                 "FROM submissions s "
                 "JOIN users u ON s.student_id = u.id "
@@ -487,7 +487,7 @@ class HomeworkServer:
                 return None
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
-                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status "
+                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status, student_feedback "
                 "FROM submissions WHERE student_id = %s AND assignment_id = %s AND status = 'in_progress' ORDER BY id DESC LIMIT 1",
                 (student_id, assignment_id),
             )
@@ -527,7 +527,7 @@ class HomeworkServer:
                 return None
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
-                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status FROM submissions WHERE id = %s",
+                "SELECT id, student_id, assignment_id, started_at, completed_at, overall_score, summary, status, student_feedback FROM submissions WHERE id = %s",
                 (submission_id,),
             )
             sub = cursor.fetchone()
@@ -642,6 +642,30 @@ class HomeworkServer:
             except Exception:
                 pass
             print(f"❌ Unexpected error during submission completion: {exc}")
+            return False
+
+    def update_student_feedback(self, submission_id: int, student_feedback: str) -> bool:
+        """Update student feedback for a completed submission."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No Homework DB connection available")
+                return False
+            cursor = mydb.cursor()
+            cursor.execute(
+                "UPDATE submissions SET student_feedback=%s WHERE id=%s AND status='completed'",
+                (student_feedback, submission_id),
+            )
+            mydb.commit()
+            cursor.close()
+            return True
+        except Exception as exc:
+            try:
+                if mydb:
+                    mydb.rollback()
+            except Exception:
+                pass
+            print(f"❌ Unexpected error during student feedback update: {exc}")
             return False
 
     def get_assignments_by_teacher(self, teacher_id: int, limit: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -893,4 +917,4 @@ class HomeworkServer:
             except Exception:
                 pass
             print(f"❌ Error deleting RAG quizzer: {e}")
-            return False
+            return False 

@@ -706,6 +706,8 @@ def view_assignment_results():
                     st.write(f"**Final Score:** {submission['overall_score']}%")
                 if submission['summary']:
                     st.write(f"**AI Summary:** {submission['summary']}")
+                if submission.get('student_feedback'):
+                    st.write(f"**Student Feedback:** {submission['student_feedback']}")
             
             # Get detailed answers for this submission
             answers_by_q = ss.homework_server.get_submission_answers(submission['id'])
