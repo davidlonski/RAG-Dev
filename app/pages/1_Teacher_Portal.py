@@ -774,32 +774,22 @@ def remove_powerpoint():
             # Warning about deletion
             st.warning("⚠️ This will permanently remove the presentation and all associated data.")
             
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button(f"🗑️ Remove", key=f"remove_{i}"):
-                    try:
-                        # Remove from RAG core if collection exists
-                        if ss.rag_core and rag_quizzer['collection_id']:
-                            ss.rag_core.remove_collection(rag_quizzer['collection_id'])
-                        
-                        # Remove from database
-                        success = ss.homework_server.delete_rag_quizzer(rag_quizzer['id'])
-                        
-                        if success:
-                            st.success("✅ Presentation removed successfully!")
-                            st.rerun()
-                        else:
-                            st.error("❌ Failed to remove presentation from database!")
-                    except Exception as e:
-                        st.error(f"❌ Error removing presentation: {e}")
-            
-            with col2:
-                if st.button(f"📋 View Details", key=f"details_{i}"):
-                    st.write("**Slide Details:**")
-                    for slide in rag_quizzer.presentation.slides[:3]:  # Show first 3 slides
-                        slide_texts = [item.content for item in slide.items if item.type.value == 'text']
-                        slide_images = [item for item in slide.items if item.type.value == 'image']
-                        st.write(f"Slide {slide.slide_number}: {len(slide_texts)} texts, {len(slide_images)} images")
+            if st.button(f"🗑️ Remove", key=f"remove_{i}"):
+                try:
+                    # Remove from RAG core if collection exists
+                    if ss.rag_core and rag_quizzer['collection_id']:
+                        ss.rag_core.remove_collection(rag_quizzer['collection_id'])
+                    
+                    # Remove from database
+                    success = ss.homework_server.delete_rag_quizzer(rag_quizzer['id'])
+                    
+                    if success:
+                        st.success("✅ Presentation removed successfully!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to remove presentation from database!")
+                except Exception as e:
+                    st.error(f"❌ Error removing presentation: {e}")
     
     # Back button
     if st.button("← Back to Dashboard", key="remove_back", use_container_width=True):

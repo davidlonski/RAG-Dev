@@ -48,13 +48,19 @@ class QuizMaster:
             # Generate short answer question using the context
             question_prompt = f"""
             Based on this content: "{text_context}"
-            
-            Write ONE open-ended, short answer question that tests understanding of a key concept in the text.
-            Also provide the correct answer (1-2 sentences) based only on the text. Respond in this exact JSON format:
+
+            Write ONE open-ended, short answer question that tests understanding of a key concept in the *text only*. 
+            Ignore any mentions of "image", "illustration", or "picture". 
+            Do NOT generate questions that ask what is shown, depicted, or illustrated. 
+            Focus only on conceptual knowledge described in the text.
+
+            Provide the correct answer (1–2 sentences) based only on the text. 
+            Respond in this exact JSON format:
             {{
                 "question": "Your short answer question here",
                 "answer": "The correct answer here."
             }}
+
             """
 
             response = self.rag_core.prompt_gemini(question_prompt)

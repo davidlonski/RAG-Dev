@@ -1,13 +1,13 @@
 venv/
 __pycache__/
 *.pptx
-chroma_db/
-chroma_db_env/
 .env
-/chroma-db-env
-/chroma-db
 .vscode/settings.json
+
+# Cursor AI files
 .cursor/
+.cursorrules
+AGENTS.md
 
 # Additional cache and test patterns
 .pytest_cache/
@@ -28,3 +28,4 @@ coverage.xml
 github-summary.md
 *.session.sql
 local-hwdb.session.sql
+CATCHUP.md
