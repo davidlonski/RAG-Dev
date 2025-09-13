@@ -1,19 +1,19 @@
 # RAG-Dev: Retrieval-Augmented Generation Quiz Application
 
-A comprehensive RAG (Retrieval-Augmented Generation) application built with Python, using ChromaDB as the vector store, Google's Gemini LLM API for response generation, and Streamlit for the frontend. The application now includes a complete user management system with teacher and student portals.
+A comprehensive RAG (Retrieval-Augmented Generation) application built with Python, using ChromaDB as the vector store, Google's Gemini LLM API for response generation, and Streamlit for the frontend. The application now includes a complete user management system with teacher and student portals, supporting both MySQL and PostgreSQL databases.
 
 ## 🎯 Features
 
 ### **User Management System**
 - **Multi-User Authentication**: Login/registration system with teacher and student roles
 - **Role-Based Access Control**: Separate portals for different user types
-- **Database Persistence**: User data stored in MySQL with proper relationships
+- **Database Persistence**: User data stored in MySQL or PostgreSQL with proper relationships
 - **Session Management**: Secure user state across application sessions
 
 ### **RAG Quizzer System**
 - **PowerPoint Processing**: Upload and process PPTX files with text and image extraction
 - **AI-Powered Question Generation**: Generate text and image-based questions using Gemini LLM
-- **Database Persistence**: RAG quizzer data stored in MySQL (no more session state loss)
+- **Database Persistence**: RAG quizzer data stored in MySQL or PostgreSQL (no more session state loss)
 - **Teacher Isolation**: Each teacher sees only their own presentations and assignments
 
 ### **Homework Management**
@@ -23,17 +23,18 @@ A comprehensive RAG (Retrieval-Augmented Generation) application built with Pyth
 - **Grading System**: AI-powered grading with feedback
 
 ### **Technical Features**
-- **ChromaDB Integration**: Vector database for document embeddings
+- **ChromaDB Integration**: Vector database for document embeddings (HTTP client)
 - **Gemini LLM API**: Advanced question generation and grading
-- **MySQL Database**: Reliable data persistence
+- **Database Support**: MySQL or PostgreSQL for reliable data persistence
+- **psycopg3/psycopg2**: Modern PostgreSQL driver with improved performance
 - **Streamlit UI**: Modern, responsive web interface
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.8+
-- MySQL Database
-- ChromaDB Server
+- Database: MySQL or PostgreSQL
+- ChromaDB Server (HTTP mode)
 - Google Gemini API Key
 
 ### Installation
@@ -57,8 +58,10 @@ A comprehensive RAG (Retrieval-Augmented Generation) application built with Pyth
 
 4. **Configure environment variables**
    Create a `.env` file in the root directory:
+   
+   **For MySQL:**
    ```env
-   # Database Configuration
+   # MySQL Database Configuration
    HOMEWORK_DB_HOST=localhost
    HOMEWORK_DB_USER=your_username
    HOMEWORK_DB_PASS=your_password
@@ -71,13 +74,36 @@ A comprehensive RAG (Retrieval-Augmented Generation) application built with Pyth
    # Google Gemini API
    GOOGLE_API_KEY=your_gemini_api_key
    ```
-
-5. **Run database migrations**
-   ```bash
    
+   **For PostgreSQL:**
+   ```env
+   # PostgreSQL Database Configuration
+   POSTGRES_HOST=localhost
+   POSTGRES_USER=your_username
+   POSTGRES_PASSWORD=your_password
+   POSTGRES_PORT=5432
+   POSTGRES_DB=your_database
+
+   # ChromaDB Configuration
+   CHROMA_SERVER_HOST=localhost
+   CHROMA_SERVER_HTTP_PORT=8000
+
+   # Google Gemini API
+   GOOGLE_API_KEY=your_gemini_api_key
    ```
 
-6. **Start the application**
+5. **Start ChromaDB Server**
+   ```bash
+   chroma run --host localhost --port 8000
+   ```
+
+6. **Run database migrations** (if needed)
+   ```bash
+   # For MySQL: Use homework_schema.sql
+   # For PostgreSQL: Use homework_schema_psql.sql
+   ```
+
+7. **Start the application**
    ```bash
    cd app
    streamlit run main.py
@@ -108,9 +134,10 @@ RAG-Dev/
 │   │   ├── 1_Teacher_Portal.py   # Teacher dashboard
 │   │   └── 2_Student_Portal.py   # Student portal
 │   ├── database/
-│   │   ├── user_db.py            # User CRUD operations
-│   │   ├── homework_db.py        # Homework and RAG quizzer CRUD operations
-│   │   └── image_db.py           # Image storage
+│   │   ├── db.py                 # MySQL database manager
+│   │   ├── db_psql.py            # PostgreSQL database manager
+│   │   ├── homework_schema.sql   # MySQL schema
+│   │   └── homework_schema_psql.sql # PostgreSQL schema
 │   ├── pptx_rag_quizzer/
 │   │   ├── rag_core.py           # Core RAG functionality
 │   │   ├── quiz_master.py        # Question generation
@@ -174,13 +201,15 @@ After running migrations, default accounts are created:
 ### **Common Issues**
 
 1. **Database Connection Errors**
-   - Verify MySQL server is running
+   - Verify MySQL or PostgreSQL server is running
    - Check database credentials in `.env`
-   - Ensure database exists
+   - Ensure database exists and schema is created
+   - For PostgreSQL: Ensure psycopg3 is installed
 
 2. **ChromaDB Connection Issues**
-   - Verify ChromaDB server is running
-   - Check host and port in `.env`
+   - Verify ChromaDB server is running on HTTP mode
+   - Check host and port in `.env` (default: localhost:8000)
+   - Start ChromaDB server: `chroma run --host localhost --port 8000`
    - Restart ChromaDB if needed
 
 3. **API Key Issues**

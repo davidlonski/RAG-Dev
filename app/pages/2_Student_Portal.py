@@ -8,8 +8,7 @@ from datetime import datetime
 # Ensure local imports work
 sys.path.append(os.path.dirname(__file__))
 
-from database.homework_db import HomeworkServer
-from database.user_db import UserServer
+from database.db_psql import HomeworkServer, UserServer
 from pptx_rag_quizzer.quiz_master import QuizMaster
 from pptx_rag_quizzer.rag_core import RAGCore
 

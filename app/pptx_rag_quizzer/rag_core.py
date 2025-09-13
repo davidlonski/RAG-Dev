@@ -5,11 +5,11 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
-from pptx_rag_quizzer.presentation_model import Presentation, Type
+from .presentation_model import Presentation, Type
 import io
 import time
 from PIL import Image as PILImage
-from database.image_db import ImageServer
+from database.db_psql import ImageServer
 
 load_dotenv()
 
@@ -25,9 +25,10 @@ def get_chroma_db_client():
 
     if _chroma_db_client_cache is None:
         load_dotenv()
-        HOST = os.getenv("CHROMA_SERVER_HOST")
-        PORT = os.getenv("CHROMA_SERVER_HTTP_PORT")
+        HOST = os.getenv("CHROMA_SERVER_HOST", "localhost")
+        PORT = os.getenv("CHROMA_SERVER_HTTP_PORT", "8000")
         _chroma_db_client_cache = chromadb.HttpClient(host=HOST, port=int(PORT))
+        print(f"✅ ChromaDB HTTP client initialized (host={HOST}, port={PORT})")
     else:
         print("Using cached ChromaDB client")
     return _chroma_db_client_cache

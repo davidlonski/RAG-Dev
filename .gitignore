@@ -29,3 +29,4 @@ github-summary.md
 *.session.sql
 local-hwdb.session.sql
 CATCHUP.md
+/chroma_db

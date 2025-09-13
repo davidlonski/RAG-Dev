@@ -1,19 +1,20 @@
 import os
+import hashlib
+import secrets
 import uuid
 import base64
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from dotenv import load_dotenv
 import mysql.connector
 
 
-class HomeworkServer:
+class DatabaseManager:
     """
-    Singleton class for managing homework assignment database connections and CRUD.
-    Mirrors the connection lifecycle used by `ImageServer` and provides helper methods
-    to insert and fetch assignments and their questions using the schema in
-    `new-app/database/homework_schema.sql`.
+    Unified database manager that combines all database operations.
+    Singleton class for managing database connections and CRUD operations.
+    Handles user authentication, homework assignments, submissions, and image storage.
     """
 
     _instance = None
@@ -22,16 +23,16 @@ class HomeworkServer:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(HomeworkServer, cls).__new__(cls)
+            cls._instance = super(DatabaseManager, cls).__new__(cls)
         return cls._instance
 
     def __init__(self):
         if not self._initialized:
-            self._mydb = self._configure_homework_server()
+            self._mydb = self._configure_database()
             self._initialized = True
 
-    def _configure_homework_server(self):
-        """Configure and return a MySQL database connection for homework tables."""
+    def _configure_database(self):
+        """Configure and return a MySQL database connection."""
         load_dotenv()
         host = os.getenv("HOMEWORK_DB_HOST")
         user = os.getenv("HOMEWORK_DB_USER")
@@ -45,10 +46,10 @@ class HomeworkServer:
                 password=password,
                 database=database,
             )
-            print("✅ Homework DB connection established successfully")
+            print("✅ Database connection established successfully")
             return mydb
         except Exception as exc:
-            print(f"❌ Error connecting to Homework DB: {exc}")
+            print(f"❌ Error connecting to database: {exc}")
             return None
 
     @property
@@ -61,11 +62,11 @@ class HomeworkServer:
         try:
             if self._mydb and self._mydb.is_connected():
                 return self._mydb
-            print("🔄 Reconnecting to Homework DB...")
-            self._mydb = self._configure_homework_server()
+            print("🔄 Reconnecting to database...")
+            self._mydb = self._configure_database()
             return self._mydb
         except Exception as exc:
-            print(f"❌ Error getting Homework DB connection: {exc}")
+            print(f"❌ Error getting database connection: {exc}")
             return None
 
     def close_connection(self):
@@ -73,12 +74,439 @@ class HomeworkServer:
         try:
             if self._mydb and self._mydb.is_connected():
                 self._mydb.close()
-                print("✅ Homework DB connection closed")
+                print("✅ Database connection closed")
         except Exception as exc:
-            print(f"❌ Error closing Homework DB connection: {exc}")
+            print(f"❌ Error closing database connection: {exc}")
 
     def __del__(self):
         self.close_connection()
+
+    # =============================================================================
+    # USER MANAGEMENT METHODS
+    # =============================================================================
+
+    def _hash_password(self, password: str) -> str:
+        """Hash a password using SHA-256."""
+        return hashlib.sha256(password.encode()).hexdigest()
+
+    def _verify_password(self, password: str, hashed_password: str) -> bool:
+        """Verify a password against its hash."""
+        return self._hash_password(password) == hashed_password
+
+    def create_user(self, user_data: Dict[str, Any]) -> Optional[int]:
+        """
+        Create a new user account.
+
+        user_data: dict with the following structure:
+        {
+            'username': str,
+            'password': str,
+            'email': str (optional),
+            'first_name': str,
+            'last_name': str,
+            'role': 'teacher' | 'student'
+        }
+
+        Returns the user id if successful, None otherwise.
+        """
+        mydb = self.get_connection()
+        if not mydb:
+            print("❌ No database connection available")
+            return None
+
+        cursor = None
+        try:
+            # Validate required fields
+            required_fields = ['username', 'password', 'first_name', 'last_name', 'role']
+            for field in required_fields:
+                if field not in user_data or not user_data[field]:
+                    print(f"❌ Missing required field: {field}")
+                    return None
+
+            # Validate role
+            if user_data['role'] not in ['teacher', 'student']:
+                print("❌ Invalid role. Must be 'teacher' or 'student'")
+                return None
+
+            # Check if username already exists
+            if self.get_user_by_username(user_data['username']):
+                print("❌ Username already exists")
+                return None
+
+            # Hash password
+            password_hash = self._hash_password(user_data['password'])
+
+            cursor = mydb.cursor()
+            insert_sql = (
+                "INSERT INTO users (username, password_hash, email, first_name, last_name, role, created_at, status) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, 'active')"
+            )
+            cursor.execute(
+                insert_sql,
+                (
+                    user_data['username'],
+                    password_hash,
+                    user_data.get('email'),
+                    user_data['first_name'],
+                    user_data['last_name'],
+                    user_data['role'],
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                ),
+            )
+
+            user_id = cursor.lastrowid
+            mydb.commit()
+            print(f"✅ User created successfully with ID: {user_id}")
+            return user_id
+
+        except Exception as exc:
+            try:
+                if mydb:
+                    mydb.rollback()
+            except Exception:
+                pass
+            print(f"❌ Unexpected error during user creation: {exc}")
+            return None
+        finally:
+            try:
+                if cursor:
+                    cursor.close()
+            except Exception:
+                pass
+
+    def authenticate_user(self, username: str, password: str) -> Optional[Dict[str, Any]]:
+        """
+        Authenticate a user with username and password.
+
+        Returns user data if authentication successful, None otherwise.
+        """
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return None
+
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id, username, password_hash, email, first_name, last_name, role, created_at, last_login, status "
+                "FROM users WHERE username = %s AND status = 'active'",
+                (username,),
+            )
+            user = cursor.fetchone()
+            cursor.close()
+
+            if not user:
+                return None
+
+            # Verify password
+            if not self._verify_password(password, user['password_hash']):
+                return None
+
+            # Update last login
+            self.update_last_login(user['id'])
+
+            # Return user data without password hash
+            return {
+                'id': user['id'],
+                'username': user['username'],
+                'email': user['email'],
+                'first_name': user['first_name'],
+                'last_name': user['last_name'],
+                'role': user['role'],
+                'created_at': user['created_at'].isoformat() if user.get('created_at') else None,
+                'last_login': user['last_login'].isoformat() if user.get('last_login') else None,
+                'status': user['status'],
+            }
+
+        except Exception as exc:
+            print(f"❌ Unexpected error during authentication: {exc}")
+            return None
+
+    def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """Get user by ID."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return None
+
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id, username, email, first_name, last_name, role, created_at, last_login, status "
+                "FROM users WHERE id = %s",
+                (user_id,),
+            )
+            user = cursor.fetchone()
+            cursor.close()
+
+            if not user:
+                return None
+
+            return {
+                'id': user['id'],
+                'username': user['username'],
+                'email': user['email'],
+                'first_name': user['first_name'],
+                'last_name': user['last_name'],
+                'role': user['role'],
+                'created_at': user['created_at'].isoformat() if user.get('created_at') else None,
+                'last_login': user['last_login'].isoformat() if user.get('last_login') else None,
+                'status': user['status'],
+            }
+
+        except Exception as exc:
+            print(f"❌ Unexpected error during user fetch: {exc}")
+            return None
+
+    def get_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
+        """Get user by username."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return None
+
+            cursor = mydb.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id, username, email, first_name, last_name, role, created_at, last_login, status "
+                "FROM users WHERE username = %s",
+                (username,),
+            )
+            user = cursor.fetchone()
+            cursor.close()
+
+            if not user:
+                return None
+
+            return {
+                'id': user['id'],
+                'username': user['username'],
+                'email': user['email'],
+                'first_name': user['first_name'],
+                'last_name': user['last_name'],
+                'role': user['role'],
+                'created_at': user['created_at'].isoformat() if user.get('created_at') else None,
+                'last_login': user['last_login'].isoformat() if user.get('last_login') else None,
+                'status': user['status'],
+            }
+
+        except Exception as exc:
+            print(f"❌ Unexpected error during user fetch: {exc}")
+            return None
+
+    def list_users(self, role: Optional[str] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        List users, optionally filtered by role.
+
+        Args:
+            role: Optional filter for 'teacher' or 'student'
+            limit: Optional limit on number of results
+        """
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return []
+
+            cursor = mydb.cursor(dictionary=True)
+            
+            sql = "SELECT id, username, email, first_name, last_name, role, created_at, last_login, status FROM users WHERE status = 'active'"
+            params = []
+
+            if role and role in ['teacher', 'student']:
+                sql += " AND role = %s"
+                params.append(role)
+
+            sql += " ORDER BY created_at DESC"
+
+            if limit and isinstance(limit, int) and limit > 0:
+                sql += " LIMIT %s"
+                params.append(limit)
+
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+            cursor.close()
+
+            result = []
+            for row in rows:
+                result.append({
+                    'id': row['id'],
+                    'username': row['username'],
+                    'email': row['email'],
+                    'first_name': row['first_name'],
+                    'last_name': row['last_name'],
+                    'role': row['role'],
+                    'created_at': row['created_at'].isoformat() if row.get('created_at') else None,
+                    'last_login': row['last_login'].isoformat() if row.get('last_login') else None,
+                    'status': row['status'],
+                })
+
+            return result
+
+        except Exception as exc:
+            print(f"❌ Unexpected error during users list: {exc}")
+            return []
+
+    def update_user(self, user_id: int, updates: Dict[str, Any]) -> bool:
+        """
+        Update user information.
+
+        Args:
+            user_id: ID of user to update
+            updates: Dict of fields to update (username, email, first_name, last_name, role, status)
+        """
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return False
+
+            # Validate updates
+            allowed_fields = ['username', 'email', 'first_name', 'last_name', 'role', 'status']
+            valid_updates = {k: v for k, v in updates.items() if k in allowed_fields and v is not None}
+
+            if not valid_updates:
+                print("❌ No valid fields to update")
+                return False
+
+            # Check if username already exists (if updating username)
+            if 'username' in valid_updates:
+                existing_user = self.get_user_by_username(valid_updates['username'])
+                if existing_user and existing_user['id'] != user_id:
+                    print("❌ Username already exists")
+                    return False
+
+            # Validate role if updating
+            if 'role' in valid_updates and valid_updates['role'] not in ['teacher', 'student']:
+                print("❌ Invalid role. Must be 'teacher' or 'student'")
+                return False
+
+            # Validate status if updating
+            if 'status' in valid_updates and valid_updates['status'] not in ['active', 'inactive']:
+                print("❌ Invalid status. Must be 'active' or 'inactive'")
+                return False
+
+            cursor = mydb.cursor()
+            
+            # Build dynamic SQL
+            set_clause = ", ".join([f"{field} = %s" for field in valid_updates.keys()])
+            sql = f"UPDATE users SET {set_clause} WHERE id = %s"
+            params = list(valid_updates.values()) + [user_id]
+
+            cursor.execute(sql, params)
+            mydb.commit()
+            cursor.close()
+
+            print(f"✅ User {user_id} updated successfully")
+            return True
+
+        except Exception as exc:
+            try:
+                if mydb:
+                    mydb.rollback()
+            except Exception:
+                pass
+            print(f"❌ Unexpected error during user update: {exc}")
+            return False
+
+    def update_password(self, user_id: int, new_password: str) -> bool:
+        """Update user password."""
+        try:
+            if not new_password:
+                print("❌ New password cannot be empty")
+                return False
+
+            password_hash = self._hash_password(new_password)
+            return self.update_user(user_id, {'password_hash': password_hash})
+
+        except Exception as exc:
+            print(f"❌ Unexpected error during password update: {exc}")
+            return False
+
+    def update_last_login(self, user_id: int) -> bool:
+        """Update user's last login timestamp."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return False
+
+            cursor = mydb.cursor()
+            cursor.execute(
+                "UPDATE users SET last_login = %s WHERE id = %s",
+                (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), user_id),
+            )
+            mydb.commit()
+            cursor.close()
+            return True
+
+        except Exception as exc:
+            print(f"❌ Unexpected error during last login update: {exc}")
+            return False
+
+    def delete_user(self, user_id: int) -> bool:
+        """
+        Soft delete a user by setting status to 'inactive'.
+        Note: This preserves data integrity for foreign key relationships.
+        """
+        try:
+            return self.update_user(user_id, {'status': 'inactive'})
+        except Exception as exc:
+            print(f"❌ Unexpected error during user deletion: {exc}")
+            return False
+
+    def get_teachers(self) -> List[Dict[str, Any]]:
+        """Get all active teachers."""
+        return self.list_users(role='teacher')
+
+    def get_students(self) -> List[Dict[str, Any]]:
+        """Get all active students."""
+        return self.list_users(role='student')
+
+    def create_default_users(self) -> bool:
+        """
+        Create default teacher and student accounts for testing.
+        Returns True if successful, False otherwise.
+        """
+        try:
+            # Create default teacher
+            teacher_data = {
+                'username': 'teacher',
+                'password': 'teacher123',
+                'email': 'teacher@example.com',
+                'first_name': 'Default',
+                'last_name': 'Teacher',
+                'role': 'teacher'
+            }
+            
+            # Create default student
+            student_data = {
+                'username': 'student',
+                'password': 'student123',
+                'email': 'student@example.com',
+                'first_name': 'Default',
+                'last_name': 'Student',
+                'role': 'student'
+            }
+
+            # Check if users already exist
+            if not self.get_user_by_username('teacher'):
+                self.create_user(teacher_data)
+                print("✅ Default teacher account created")
+            
+            if not self.get_user_by_username('student'):
+                self.create_user(student_data)
+                print("✅ Default student account created")
+
+            return True
+
+        except Exception as exc:
+            print(f"❌ Error creating default users: {exc}")
+            return False
+
+    # =============================================================================
+    # HOMEWORK/ASSIGNMENT MANAGEMENT METHODS
+    # =============================================================================
 
     def create_assignment(self, assignment: Dict[str, Any]) -> Optional[str]:
         """
@@ -109,7 +537,7 @@ class HomeworkServer:
         """
         mydb = self.get_connection()
         if not mydb:
-            print("❌ No Homework DB connection available")
+            print("❌ No database connection available")
             return None
 
         cursor = None
@@ -142,7 +570,6 @@ class HomeworkServer:
 
             num_text_questions = sum(1 for q in questions if q.get("type") == "text")
             num_image_questions = sum(1 for q in questions if q.get("type") == "image")
-
 
             
             cursor = mydb.cursor()
@@ -183,10 +610,8 @@ class HomeworkServer:
                 image_id = None
                 if qtype == "image" and q.get("image_bytes") and q.get("image_extension"):
                     # Upload image to images table and get image_id
-                    from database.image_db import ImageServer
-                    image_server = ImageServer()
                     img_bytes = base64.b64decode(q.get("image_bytes"))
-                    image_id = image_server.upload_image(img_bytes, q["image_extension"])
+                    image_id = self.upload_image(img_bytes, q["image_extension"])
 
                 cursor.execute(
                     insert_question_sql,
@@ -223,7 +648,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return None
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
@@ -270,9 +695,7 @@ class HomeworkServer:
                     }
                     if include_image_bytes and q.get("image_id") is not None:
                         # Get image data from images table
-                        from database.image_db import ImageServer
-                        image_server = ImageServer()
-                        image_data = image_server.get_image_as_base64(q["image_id"])
+                        image_data = self.get_image_as_base64(q["image_id"])
                         if image_data:
                             qdict["image_bytes"] = image_data
                     questions.append(qdict)
@@ -289,7 +712,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return []
             cursor = mydb.cursor(dictionary=True)
             sql = (
@@ -328,7 +751,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return []
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
@@ -354,9 +777,7 @@ class HomeworkServer:
                 }
                 if include_image_bytes and q.get("image_id") is not None:
                     # Get image data from images table
-                    from database.image_db import ImageServer
-                    image_server = ImageServer()
-                    image_data = image_server.get_image_as_base64(q["image_id"])
+                    image_data = self.get_image_as_base64(q["image_id"])
                     if image_data:
                         item["image_bytes"] = image_data
                 result.append(item)
@@ -370,7 +791,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return False
             cursor = mydb.cursor()
             cursor.execute("DELETE FROM assignments WHERE id = %s", (assignment_id,))
@@ -394,7 +815,7 @@ class HomeworkServer:
                 return False
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return False
             cursor = mydb.cursor()
             cursor.execute("UPDATE assignments SET status = %s WHERE id = %s", (status, assignment_id))
@@ -410,16 +831,57 @@ class HomeworkServer:
             print(f"❌ Unexpected error during status update: {exc}")
             return False
 
-    # -------------------------
-    # Submissions CRUD
-    # -------------------------
+    def get_assignments_by_teacher(self, teacher_id: int, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get assignments created by a specific teacher."""
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return []
+            cursor = mydb.cursor(dictionary=True)
+            sql = (
+                "SELECT id, name, collection_id, teacher_id, created_at, num_questions, "
+                "num_text_questions, num_image_questions, status FROM assignments "
+                "WHERE teacher_id = %s ORDER BY created_at DESC"
+            )
+            params = [teacher_id]
+            
+            if limit and isinstance(limit, int) and limit > 0:
+                sql += " LIMIT %s"
+                params.append(limit)
+
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+            cursor.close()
+            
+            result = []
+            for row in rows:
+                result.append({
+                    "id": row["id"],
+                    "name": row["name"],
+                    "collection_id": row.get("collection_id"),
+                    "teacher_id": row.get("teacher_id"),
+                    "created_at": row["created_at"].isoformat() if row.get("created_at") else None,
+                    "num_questions": row["num_questions"],
+                    "num_text_questions": row["num_text_questions"],
+                    "num_image_questions": row["num_image_questions"],
+                    "status": row["status"],
+                })
+            return result
+        except Exception as exc:
+            print(f"❌ Unexpected error during teacher assignments fetch: {exc}")
+            return []
+
+    # =============================================================================
+    # SUBMISSION MANAGEMENT METHODS
+    # =============================================================================
 
     def get_completed_submission(self, student_id: int, assignment_id: int):
         """Return the completed submission for a student/assignment if it exists."""
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return None
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
@@ -439,7 +901,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return None
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
@@ -459,7 +921,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return []
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
@@ -483,7 +945,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return None
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
@@ -523,7 +985,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return None
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
@@ -560,7 +1022,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return {}
             cursor = mydb.cursor(dictionary=True)
             cursor.execute(
@@ -592,7 +1054,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return False
             cursor = mydb.cursor()
             cursor.execute(
@@ -625,7 +1087,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return False
             cursor = mydb.cursor()
             cursor.execute(
@@ -649,7 +1111,7 @@ class HomeworkServer:
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return False
             cursor = mydb.cursor()
             cursor.execute(
@@ -668,53 +1130,12 @@ class HomeworkServer:
             print(f"❌ Unexpected error during student feedback update: {exc}")
             return False
 
-    def get_assignments_by_teacher(self, teacher_id: int, limit: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Get assignments created by a specific teacher."""
-        try:
-            mydb = self.get_connection()
-            if not mydb:
-                print("❌ No Homework DB connection available")
-                return []
-            cursor = mydb.cursor(dictionary=True)
-            sql = (
-                "SELECT id, name, collection_id, teacher_id, created_at, num_questions, "
-                "num_text_questions, num_image_questions, status FROM assignments "
-                "WHERE teacher_id = %s ORDER BY created_at DESC"
-            )
-            params = [teacher_id]
-            
-            if limit and isinstance(limit, int) and limit > 0:
-                sql += " LIMIT %s"
-                params.append(limit)
-
-            cursor.execute(sql, params)
-            rows = cursor.fetchall()
-            cursor.close()
-            
-            result = []
-            for row in rows:
-                result.append({
-                    "id": row["id"],
-                    "name": row["name"],
-                    "collection_id": row.get("collection_id"),
-                    "teacher_id": row.get("teacher_id"),
-                    "created_at": row["created_at"].isoformat() if row.get("created_at") else None,
-                    "num_questions": row["num_questions"],
-                    "num_text_questions": row["num_text_questions"],
-                    "num_image_questions": row["num_image_questions"],
-                    "status": row["status"],
-                })
-            return result
-        except Exception as exc:
-            print(f"❌ Unexpected error during teacher assignments fetch: {exc}")
-            return []
-
     def get_submissions_by_student(self, student_id: int, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """Get submissions by a specific student."""
         try:
             mydb = self.get_connection()
             if not mydb:
-                print("❌ No Homework DB connection available")
+                print("❌ No database connection available")
                 return []
             cursor = mydb.cursor(dictionary=True)
             sql = (
@@ -752,7 +1173,10 @@ class HomeworkServer:
             print(f"❌ Unexpected error during student submissions fetch: {exc}")
             return []
 
-    # RAG Quizzer Methods (Integrated from rag_quizzer_db.py)
+    # =============================================================================
+    # RAG QUIZZER MANAGEMENT METHODS
+    # =============================================================================
+
     def create_rag_quizzer(self, quizzer_data):
         """
         Create a new RAG quizzer entry.
@@ -917,4 +1341,108 @@ class HomeworkServer:
             except Exception:
                 pass
             print(f"❌ Error deleting RAG quizzer: {e}")
-            return False 
+            return False
+
+    # =============================================================================
+    # IMAGE MANAGEMENT METHODS
+    # =============================================================================
+
+    def upload_image(self, image_bytes, image_extension=None, content_type=None):
+        """
+        Uploads an image to the database and returns the image id
+        image_bytes: bytes
+        image_extension: str (optional) - file extension like 'png', 'jpg'
+        content_type: str (optional) - MIME type like 'image/png'
+        returns: image_id
+        """
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return None
+                
+            file_size = len(image_bytes)
+            created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            mycursor = mydb.cursor()
+            sql = "INSERT INTO images (image_data, image_extension, created_at, file_size, content_type) VALUES (%s, %s, %s, %s, %s)"
+            val = (image_bytes, image_extension, created_at, file_size, content_type)
+            mycursor.execute(sql, val)
+            mydb.commit()
+            image_id = mycursor.lastrowid
+            mycursor.close()
+            return image_id
+        except Exception as e:
+            print(f"❌ Unexpected error during image upload: {e}")
+            return None
+            
+    def get_image(self, image_id):
+        """
+        Gets an image from the database and returns the image data and metadata
+        image_id: int
+        returns: dict with image_data, image_extension, file_size, content_type, created_at
+        """
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return None
+                
+            mycursor = mydb.cursor(dictionary=True)
+            sql = "SELECT image_data, image_extension, file_size, content_type, created_at FROM images WHERE id = %s"
+            val = (image_id,)
+            mycursor.execute(sql, val)
+            result = mycursor.fetchone()
+            mycursor.close()
+            return result
+        except Exception as e:
+            print(f"❌ Unexpected error during image get: {e}")
+            return None
+            
+    def get_image_as_base64(self, image_id):
+        """
+        Gets an image from the database and returns it as base64 encoded string
+        image_id: int
+        returns: base64 encoded string or None if error
+        """
+        try:
+            result = self.get_image(image_id)
+            if result and result.get('image_data'):
+                return base64.b64encode(result['image_data']).decode('utf-8')
+            return None
+        except Exception as e:
+            print(f"❌ Unexpected error during image base64 conversion: {e}")
+            return None
+
+    def delete_image(self, image_id):
+        """
+        Deletes an image from the database
+        image_id: int
+        returns: True if successful, None if error
+        """
+        try:
+            mydb = self.get_connection()
+            if not mydb:
+                print("❌ No database connection available")
+                return None
+                
+            mycursor = mydb.cursor()
+            sql = "DELETE FROM images WHERE id = %s"
+            val = (image_id,)
+            mycursor.execute(sql, val)
+            mydb.commit()
+            mycursor.close()
+            return True
+        except Exception as e:
+            print(f"❌ Unexpected error during image delete: {e}")
+            return None
+
+
+# =============================================================================
+# CONVENIENCE ALIASES FOR BACKWARD COMPATIBILITY
+# =============================================================================
+
+# Create singleton instances for backward compatibility
+UserServer = DatabaseManager
+HomeworkServer = DatabaseManager
+ImageServer = DatabaseManager

@@ -26,7 +26,8 @@ pytesseract==0.3.13
 Pillow==11.3.0
 
 # Database and storage
-mysql-connector-python==9.4.0
+psycopg[binary]==3.2.10
+chromadb==1.0.15
 
 # Utilities
 python-dotenv>=1.0.0
