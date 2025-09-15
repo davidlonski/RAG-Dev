@@ -1,5 +1,97 @@
 # Changelog
 
+## [2025-01-27] - Production VM Separation & ChromaDB API Implementation
+
+### 🚀 Major Architecture Changes
+
+#### **Complete VM Separation Implementation**
+- **ChromaDB API Service**: Created standalone FastAPI service (`chroma-api/main.py`) for ChromaDB operations
+- **HTTP Client**: Implemented pure HTTP client (`app/pptx_rag_quizzer/chroma_http_client.py`) with zero ChromaDB dependencies
+- **Dependency Isolation**: App VM now has no heavy ML dependencies (torch, sentence-transformers, chromadb)
+- **Production Deployment**: Full separation between App VM, ChromaDB API VM, and ChromaDB Server VM
+
+#### **ChromaDB API Service Features**
+- **FastAPI Application**: RESTful API with comprehensive ChromaDB operations
+- **Collection Management**: Create, delete, and manage ChromaDB collections via HTTP
+- **Document Operations**: Add documents with automatic embedding generation
+- **Query Interface**: Vector similarity search with configurable result formats
+- **Numpy Serialization**: Automatic conversion of numpy arrays to JSON-serializable formats
+- **Error Handling**: Comprehensive error handling and logging
+
+#### **HTTP Client Implementation**
+- **Pure HTTP Client**: Uses only `requests` library, no ChromaDB dependencies
+- **Singleton Pattern**: Cached client instances for performance
+- **Environment Configuration**: Configurable API URL via environment variables
+- **Health Checks**: Built-in API service health monitoring
+- **Retry Logic**: Robust error handling with detailed logging
+
+### 🔧 Technical Improvements
+
+#### **RAG Core Refactoring**
+- **Removed Direct ChromaDB**: Eliminated all direct `chromadb` imports from main application
+- **HTTP-Only Operations**: All ChromaDB operations now go through HTTP API calls
+- **Simplified Constructor**: RAGCore now only supports HTTP API client mode
+- **Legacy Code Removal**: Removed all legacy ChromaDB client functions
+
+#### **Dependency Management**
+- **App VM Requirements**: Created `app/requirements-app-only.txt` with lightweight dependencies
+- **API VM Requirements**: Created `chroma-api/requirements.txt` with full ML stack
+- **Production Requirements**: Updated `requirements-prod.txt` for production deployment
+- **Dependency Separation**: Clear separation of concerns between VMs
+
+### 🧹 Production Cleanup
+
+#### **Development Code Removal**
+- **Default Account Creation**: Removed `create_default_users()` method from database files
+- **Development Tools**: Removed "Development Tools" expander from main application
+- **Test Account References**: Eliminated all references to default test accounts
+- **Documentation Updates**: Updated README to remove development tool instructions
+
+#### **Code Quality Improvements**
+- **Production-Ready UI**: Clean, professional interface without development artifacts
+- **Proper Authentication**: Only legitimate user registration/login flows
+- **Security Hardening**: No hardcoded credentials or test accounts
+- **Professional Documentation**: Updated guides for production deployment
+
+### 📁 New Files Created
+- **`chroma-api/main.py`**: Standalone ChromaDB API service (255 lines)
+- **`chroma-api/requirements.txt`**: API service dependencies
+- **`chroma-api/env.example`**: Environment configuration template
+- **`chroma-api/README.md`**: API service documentation
+- **`app/pptx_rag_quizzer/chroma_http_client.py`**: Pure HTTP client implementation
+- **`app/requirements-app-only.txt`**: Lightweight app dependencies
+- **`VM_SEPARATION_GUIDE.md`**: Comprehensive deployment guide
+
+### 📁 Files Modified
+- **`app/pptx_rag_quizzer/rag_core.py`**: Complete refactor to HTTP-only operations
+- **`app/main.py`**: Removed development tools and default account creation
+- **`app/database/db_psql.py`**: Removed `create_default_users()` method
+- **`app/database/db_mysql.py`**: Removed `create_default_users()` method
+- **`app/README.md`**: Updated for production deployment
+- **`CATCHUP.md`**: Updated with new architecture and VM separation details
+
+### 🎯 Production Benefits
+
+#### **Scalability & Performance**
+- **VM Isolation**: Each service runs on dedicated VMs for optimal resource allocation
+- **Dependency Optimization**: App VM is lightweight and fast to deploy
+- **Horizontal Scaling**: ChromaDB API can be scaled independently
+- **Resource Efficiency**: Heavy ML dependencies only where needed
+
+#### **Maintenance & Deployment**
+- **Independent Updates**: Services can be updated without affecting others
+- **Clear Separation**: Easy to troubleshoot and maintain individual components
+- **Production Security**: No development tools or test accounts in production
+- **Professional Interface**: Clean, user-friendly authentication system
+
+### 🧪 Testing & Validation
+- **Comprehensive API Testing**: All ChromaDB API endpoints tested and validated
+- **Embedding Serialization**: Fixed numpy array serialization for query responses
+- **End-to-End Workflow**: Complete RAG pipeline tested with HTTP API
+- **VM Separation Verified**: Confirmed zero ChromaDB dependencies on App VM
+
+---
+
 ## [2025-01-27] - psycopg3 Migration & ChromaDB HTTP Client Fix
 
 ### 🔧 Technical Improvements

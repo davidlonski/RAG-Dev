@@ -1,4 +1,3 @@
-import chromadb
 import uuid
 import random
 import os
@@ -10,28 +9,28 @@ import io
 import time
 from PIL import Image as PILImage
 from database.db_psql import ImageServer
+from .chroma_http_client import get_chroma_http_client
 
 load_dotenv()
 
 _llm_model_cache = None
-_chroma_db_client_cache = None
+_chroma_service_cache = None
 
 
-def get_chroma_db_client():
+# Legacy ChromaDB client function removed - now using HTTP API client only
+
+def get_chroma_http_client_instance(api_url=None):
     """
-    Configures the ChromaDB client using the CHROMA_SERVER_HOST and CHROMA_SERVER_HTTP_PORT environment variables.
+    Gets the ChromaDB HTTP client instance.
     """
-    global _chroma_db_client_cache
-
-    if _chroma_db_client_cache is None:
-        load_dotenv()
-        HOST = os.getenv("CHROMA_SERVER_HOST", "localhost")
-        PORT = os.getenv("CHROMA_SERVER_HTTP_PORT", "8000")
-        _chroma_db_client_cache = chromadb.HttpClient(host=HOST, port=int(PORT))
-        print(f"✅ ChromaDB HTTP client initialized (host={HOST}, port={PORT})")
+    global _chroma_service_cache
+    
+    if api_url or _chroma_service_cache is None:
+        _chroma_service_cache = get_chroma_http_client(api_url=api_url)
+        print("✅ ChromaDB HTTP client initialized")
     else:
-        print("Using cached ChromaDB client")
-    return _chroma_db_client_cache
+        print("Using cached ChromaDB HTTP client")
+    return _chroma_service_cache
 
 def get_llm_model():
     """
@@ -68,14 +67,19 @@ def get_llm_model():
 class RAGCore:
     """Handles the core Retrieval-Augmented Generation pipeline."""
 
-    def __init__(self):
+    def __init__(self, chroma_api_url=None):
         """
         Initializes the RAGCore.
+        
+        Args:
+            chroma_api_url: ChromaDB API service URL (for production environments)
         """
-
         self.llm_model = get_llm_model()
-
-        self.chroma_client = get_chroma_db_client()
+        self.chroma_api_url = chroma_api_url
+        
+        # Always use HTTP API client (no ChromaDB dependencies)
+        self.chroma_api = get_chroma_http_client_instance(api_url=chroma_api_url)
+        print("✅ RAGCore initialized with ChromaDB HTTP client (no heavy dependencies)")
 
     def create_collection(self, data: Presentation):
         """
@@ -133,14 +137,9 @@ class RAGCore:
         
         collection_id = str(uuid.uuid4())
 
-        self.chroma_client.create_collection(name=collection_id)
-        
-
-        self.chroma_client.get_collection(name=collection_id).add(
-            documents=all_texts,
-            metadatas=all_metadatas,
-            ids=all_ids
-        )   
+        # Use HTTP API client (no ChromaDB dependencies)
+        self.chroma_api.create_collection(collection_id)
+        self.chroma_api.add_documents(collection_id, all_texts, all_metadatas, all_ids)   
 
         return collection_id
 
@@ -148,17 +147,20 @@ class RAGCore:
         """
         This function is used to remove a collection.
         """
-        self.chroma_client.delete_collection(name=collection_id)
+        # Use HTTP API client (no ChromaDB dependencies)
+        self.chroma_api.delete_collection(collection_id)
 
 
     def query_collection(self, query_text: str, collection_id: str, n_results: int = 1):
         """
         This function is used to get the context of collection.
         """
-        retrieved_results = self.chroma_client.get_collection(name=collection_id).query(
-            query_texts=[query_text],
-            n_results=n_results,
-            include=["documents", "metadatas", "embeddings"],
+        # Use HTTP API client (no ChromaDB dependencies)
+        retrieved_results = self.chroma_api.query_collection(
+            collection_id, 
+            [query_text], 
+            n_results, 
+            ["documents", "metadatas", "embeddings"]
         )
 
         return retrieved_results
@@ -173,7 +175,8 @@ class RAGCore:
             dict: The context of a random slide.
 
         """
-        collection_data = self.chroma_client.get_collection(name=collection_id).get()
+        # Use HTTP API client (no ChromaDB dependencies)
+        collection_data = self.chroma_api.get_collection_data(collection_id, ["documents", "metadatas"])
         
         if collection_data is None or not collection_data:
             raise ValueError(f"Collection data is None or empty for collection_id: {collection_id}")
@@ -207,8 +210,8 @@ class RAGCore:
         attempts = 0
 
         try:
-            collection = self.chroma_client.get_collection(name=collection_id)
-            data = collection.get()
+            # Use HTTP API client (no ChromaDB dependencies)
+            data = self.chroma_api.get_collection_data(collection_id, ["documents", "metadatas"])
 
             if not data["documents"]:
                 print("No documents found in the collection.")
@@ -248,7 +251,8 @@ class RAGCore:
         """
         This function is used to get the context of a slide by slide number.
         """
-        collection_data = self.chroma_client.get_collection(name=collection_id).get()
+        # Use HTTP API client (no ChromaDB dependencies)
+        collection_data = self.chroma_api.get_collection_data(collection_id, ["documents", "metadatas"])
 
         for idx, metadata in enumerate(collection_data["metadatas"]):
             if metadata["slide_number"] == slide_number:

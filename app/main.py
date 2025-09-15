@@ -127,24 +127,8 @@ def register_page():
                 else:
                     st.error("❌ Failed to create account. Username may already exist.")
 
-def create_default_accounts():
-    """Create default accounts if they don't exist"""
-    if st.button("Create Default Accounts (for testing)"):
-        success = ss.user_server.create_default_users()
-        if success:
-            st.success("✅ Default accounts created!")
-            st.info("Teacher: username='teacher', password='teacher123'")
-            st.info("Student: username='student', password='student123'")
-        else:
-            st.error("❌ Failed to create default accounts.")
-
 # Main app logic
 if ss.login_page == "login":
     login_page()
 else:
     register_page()
-
-# Footer with default account creation
-st.markdown("---")
-with st.expander("🔧 Development Tools"):
-    create_default_accounts()

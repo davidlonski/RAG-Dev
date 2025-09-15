@@ -463,46 +463,6 @@ class DatabaseManager:
         """Get all active students."""
         return self.list_users(role='student')
 
-    def create_default_users(self) -> bool:
-        """
-        Create default teacher and student accounts for testing.
-        Returns True if successful, False otherwise.
-        """
-        try:
-            # Create default teacher
-            teacher_data = {
-                'username': 'teacher',
-                'password': 'teacher123',
-                'email': 'teacher@example.com',
-                'first_name': 'Default',
-                'last_name': 'Teacher',
-                'role': 'teacher'
-            }
-            
-            # Create default student
-            student_data = {
-                'username': 'student',
-                'password': 'student123',
-                'email': 'student@example.com',
-                'first_name': 'Default',
-                'last_name': 'Student',
-                'role': 'student'
-            }
-
-            # Check if users already exist
-            if not self.get_user_by_username('teacher'):
-                self.create_user(teacher_data)
-                print("✅ Default teacher account created")
-            
-            if not self.get_user_by_username('student'):
-                self.create_user(student_data)
-                print("✅ Default student account created")
-
-            return True
-
-        except Exception as exc:
-            print(f"❌ Error creating default users: {exc}")
-            return False
 
     # =============================================================================
     # HOMEWORK/ASSIGNMENT MANAGEMENT METHODS

@@ -10,14 +10,10 @@ cd app
 streamlit run main.py
 ```
 
-### 2. Create Default Accounts
+### 2. Create User Accounts
 - Open the application in your browser
-- Scroll down to "Development Tools" 
-- Click "Create Default Accounts (for testing)"
-
-### 3. Login with Default Accounts
-- **Teacher Account**: username=`teacher`, password=`teacher123`
-- **Student Account**: username=`student`, password=`student123`
+- Click "Register New Account" to create a new user account
+- Teachers and students can register through the same interface
 
 ## 📁 Application Structure
 
@@ -32,7 +28,6 @@ app/
 │   ├── homework_server.py    # Assignment management
 │   └── homework_schema.sql   # Database schema
 ├── pptx_rag_quizzer/         # RAG core functionality
-└── test_user_system.py       # Testing utilities
 ```
 
 ## 🔐 User Management Features
@@ -97,9 +92,9 @@ Set up your `.env` file with:
 - Verify database schema is properly set up
 
 ### Authentication Issues
-- Use the "Create Default Accounts" feature to set up test users
 - Check database connection if user creation fails
 - Verify password requirements (minimum 6 characters)
+- Ensure proper user registration through the interface
 
 ## 📝 Notes
 
