@@ -8,7 +8,7 @@ from .presentation_model import Presentation, Type
 import io
 import time
 from PIL import Image as PILImage
-from database.db_psql import ImageServer
+from database.db_supabase import ImageServer
 from .chroma_http_client import get_chroma_http_client
 
 load_dotenv()
@@ -98,15 +98,19 @@ class RAGCore:
 
             all_slide_texts = []
             all_slide_metadatas = []
+            all_slide_items = []  # Keep track of the actual items
+            
             for item in slide.items:
                 if item.type == Type.text:
                     all_slide_texts.append(item.content)
                     all_slide_metadatas.append(item.metadata())
+                    all_slide_items.append(item)
                 elif item.type == Type.image:
                     # Skip deleted images (marked with "__DELETED__" content)
                     if item.content != "__DELETED__":
                         all_slide_texts.append(item.content)
                         all_slide_metadatas.append(item.metadata())
+                        all_slide_items.append(item)
 
             chunk_id = str(uuid.uuid4())
             all_texts.append(" ".join(all_slide_texts))
@@ -114,20 +118,28 @@ class RAGCore:
             
             # Combine all metadata into a single dictionary for this slide
             combined_metadata = {}
-            for i, metadata in enumerate(all_slide_metadatas):
+            for i, (metadata, item) in enumerate(zip(all_slide_metadatas, all_slide_items)):
                 item_num = i + 1
-                combined_metadata[f"item_{item_num}_type"] = metadata["type"]
-                combined_metadata[f"item_{item_num}_slide_number"] = metadata["slide_number"]
-                combined_metadata[f"item_{item_num}_order_number"] = metadata["order_number"]
+                # Ensure all metadata values are JSON-serializable for ChromaDB
+                combined_metadata[f"item_{item_num}_type"] = str(metadata["type"])
+                combined_metadata[f"item_{item_num}_slide_number"] = int(metadata["slide_number"])
+                combined_metadata[f"item_{item_num}_order_number"] = int(metadata["order_number"])
                 
                 # Add additional fields for images
                 if metadata["type"] == "image":
-                    combined_metadata[f"item_{item_num}_image_extension"] = metadata["extension"]
-                    image_id = image_server.upload_image(metadata["image_bytes"], metadata.get("image_extension"), metadata.get("content_type"))
-                    combined_metadata[f"item_{item_num}_image_id"] = image_id
+                    combined_metadata[f"item_{item_num}_image_extension"] = str(metadata["extension"])
+                    # Access image_bytes directly from the item object, not from metadata
+                    # Only Image objects have image_bytes attribute, Text objects do not
+                    if hasattr(item, 'image_bytes') and hasattr(item, 'extension'):
+                        image_id = image_server.upload_image(item.image_bytes, item.extension, f"image/{item.extension}")
+                        # Ensure image_id is serializable for ChromaDB metadata
+                        combined_metadata[f"item_{item_num}_image_id"] = str(image_id) if image_id is not None else ""
+                    else:
+                        print(f"❌ Image item missing required attributes: {type(item)}")
+                        combined_metadata[f"item_{item_num}_image_id"] = ""
 
-            combined_metadata["slide_number"] = slide.slide_number
-            combined_metadata["slide_id"] = slide.id
+            combined_metadata["slide_number"] = int(slide.slide_number)
+            combined_metadata["slide_id"] = str(slide.id)
 
             all_metadatas.append(combined_metadata)
 

@@ -1,5 +1,96 @@
 # Changelog
 
+## [2025-01-27] - Supabase API Integration & Critical Bug Fixes
+
+### 🚀 Major Database Architecture Change
+
+#### **Supabase API Integration**
+- **Database Migration**: Switched from direct PostgreSQL connections to Supabase API
+- **New Database Manager**: Created `DatabaseManagerSupabase` class with full API integration
+- **Supabase Client**: Integrated `supabase-py` library for all database operations
+- **Environment Configuration**: Added Supabase URL and service role key configuration
+- **Backward Compatibility**: Maintained same interface as PostgreSQL version
+- **Comprehensive Testing**: Created test script for Supabase connection validation
+- **Import Updates**: Updated all application files to use new Supabase database manager
+- **Zero Breaking Changes**: Seamless transition with identical method signatures
+
+#### **Implementation Details**
+- **File**: `app/database/db_supabase.py` (1,266 lines)
+- **Dependencies**: Added `supabase==2.18.1` to requirements.txt
+- **Environment Variables**: 
+  - `SUPABASE_URL`: Supabase project URL
+  - `SUPABASE_SERVICE_ROLE_KEY`: Service role key for full access
+- **Image Storage**: Base64 encoding with hex conversion handling for Supabase compatibility
+- **Connection Resilience**: Retry logic with automatic reconnection for network issues
+- **Legacy Support**: Kept `db_psql.py` for reference and potential rollback
+
+#### **Updated Files**
+- `app/main.py` - Updated import to use Supabase database manager
+- `app/pages/1_Teacher_Portal.py` - Updated imports for Supabase integration
+- `app/pages/2_Student_Portal.py` - Updated imports for Supabase integration
+- `app/pptx_rag_quizzer/rag_core.py` - Updated imports for Supabase integration
+- `app/pptx_rag_quizzer/quiz_master.py` - Updated imports for Supabase integration
+- `app/pptx_rag_quizzer/image_magic.py` - Updated imports for Supabase integration
+- `requirements.txt` - Added Supabase Python client library
+- `CATCHUP.md` - Updated documentation for Supabase integration
+
+### 🐛 Critical Bug Fixes
+
+#### **ChromaDB Metadata Serialization Issues**
+- **Root Cause**: Image metadata containing raw bytes caused JSON serialization errors
+- **Solution**: Removed raw bytes from ChromaDB metadata, accessed image data directly from objects
+- **Files Fixed**: `app/pptx_rag_quizzer/presentation_model.py`, `app/pptx_rag_quizzer/rag_core.py`
+- **Impact**: Resolved "Object of type bytes is not JSON serializable" errors during collection creation
+
+#### **Student Portal Grading Failures**
+- **Root Cause**: RAG core was None during answer grading, causing "NoneType object has no attribute" errors
+- **Solution**: Added proper service initialization and error handling in student portal
+- **Files Fixed**: `app/pages/2_Student_Portal.py`
+- **Impact**: Students can now submit and grade answers without crashes
+
+#### **Teacher Portal Results View Errors**
+- **Root Cause**: Missing user data in submission queries caused KeyError crashes
+- **Solution**: Updated Supabase queries to properly join user data and added fallback handling
+- **Files Fixed**: `app/database/db_supabase.py`, `app/pages/1_Teacher_Portal.py`
+- **Impact**: Teachers can now view assignment results without crashes
+
+#### **Image Upload Serialization Issues**
+- **Root Cause**: Supabase automatically converts base64 to hex format, causing decode errors
+- **Solution**: Added hex-to-base64 conversion logic in image retrieval methods
+- **Files Fixed**: `app/database/db_supabase.py`
+- **Impact**: Image upload and retrieval now works correctly with Supabase
+
+#### **Database Connection Stability**
+- **Root Cause**: Network timeouts and connection drops caused "Server disconnected" errors
+- **Solution**: Implemented retry logic with exponential backoff and automatic reconnection
+- **Files Fixed**: `app/database/db_supabase.py`
+- **Impact**: Application now handles network issues gracefully with automatic recovery
+
+### 🧹 Code Cleanup
+- **Removed Test Files**: Deleted all temporary test and debug files
+- **Removed Debug Code**: Cleaned up debug print statements and emoji logging
+- **Production Ready**: Code is now clean and production-ready
+
+### 🔧 Technical Benefits
+
+#### **Improved Scalability**
+- **Managed Database**: Leverages Supabase's managed PostgreSQL infrastructure
+- **Automatic Scaling**: Built-in scaling and performance optimization
+- **Backup & Recovery**: Automatic backups and point-in-time recovery
+- **Monitoring**: Built-in database monitoring and alerting
+
+#### **Enhanced Security**
+- **Row Level Security**: Built-in RLS policies for data isolation
+- **API Security**: Secure API endpoints with built-in authentication
+- **Connection Security**: Encrypted connections and secure API keys
+- **Access Control**: Fine-grained permissions via service role keys
+
+#### **Developer Experience**
+- **Real-time Features**: Built-in real-time subscriptions (future enhancement)
+- **Dashboard**: Web-based database management interface
+- **API Documentation**: Auto-generated API documentation
+- **Easy Deployment**: Simplified deployment with managed infrastructure
+
 ## [2025-01-27] - Production VM Separation & ChromaDB API Implementation
 
 ### 🚀 Major Architecture Changes

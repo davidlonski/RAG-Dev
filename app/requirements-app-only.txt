@@ -21,7 +21,7 @@ pytesseract==0.3.13
 Pillow==11.3.0
 
 # Database and storage (PostgreSQL only)
-psycopg[binary]==3.2.10
+supabase==2.18.1
 
 # Utilities
 python-dotenv>=1.0.0

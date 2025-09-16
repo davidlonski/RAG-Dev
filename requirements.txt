@@ -27,6 +27,7 @@ Pillow==11.3.0
 # Database and storage
 psycopg[binary]==3.2.10
 chromadb==1.0.15
+supabase==2.18.1
 
 # Utilities
 python-dotenv>=1.0.0

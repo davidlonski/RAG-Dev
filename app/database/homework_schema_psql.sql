@@ -50,11 +50,12 @@ CREATE TABLE assignments (
 -- Images table
 CREATE TABLE images (
     id SERIAL PRIMARY KEY,
-    image_data BYTEA NOT NULL,
+    image_data TEXT,  -- URL to Supabase Storage or base64 data (for backward compatibility)
     image_extension VARCHAR(12),
     created_at TIMESTAMP NOT NULL,
     file_size INT,
-    content_type VARCHAR(100)
+    content_type VARCHAR(100),
+    storage_path VARCHAR(255)  -- Path in Supabase Storage bucket
 );
 
 -- Questions table

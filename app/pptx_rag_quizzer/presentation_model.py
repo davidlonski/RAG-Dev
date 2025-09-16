@@ -21,7 +21,6 @@ class Image(SlideItem):
         return {
             "type": Type.image.value,
             "extension": self.extension,
-            "image_bytes": self.image_bytes,
             "image_id": self.id,
             "slide_number": self.slide_number,
             "order_number": self.order_number

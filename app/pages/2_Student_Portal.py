@@ -8,7 +8,7 @@ from datetime import datetime
 # Ensure local imports work
 sys.path.append(os.path.dirname(__file__))
 
-from database.db_psql import HomeworkServer, UserServer
+from database.db_supabase import HomeworkServer, UserServer
 from pptx_rag_quizzer.quiz_master import QuizMaster
 from pptx_rag_quizzer.rag_core import RAGCore
 
@@ -50,6 +50,22 @@ if "rag_core" not in ss:
     ss.rag_core = RAGCore()
 if "quiz_master" not in ss:
     ss.quiz_master = QuizMaster(ss.rag_core)
+
+# Ensure RAG core and quiz master are properly initialized
+def initialize_student_services():
+    """Initialize RAG core and quiz master services for student portal"""
+    try:
+        if ss.rag_core is None:
+            ss.rag_core = RAGCore()
+        if not ss.rag_core.llm_model:
+            st.error("❌ Google API key not found or invalid. Please check your .env file.")
+            return False
+        if ss.quiz_master is None or ss.quiz_master.rag_core is None:
+            ss.quiz_master = QuizMaster(ss.rag_core)
+        return True
+    except Exception as e:
+        st.error(f"❌ Error initializing student services: {e}")
+        return False
 if "page" not in ss:
     ss.page = "assignments"
 if "current_assignment" not in ss:
@@ -224,6 +240,11 @@ def grade_and_save(answers: Dict[int, str], finalize: bool = False):
         st.error("No assignment or submission found.")
         return
 
+    # Initialize services before grading
+    if not initialize_student_services():
+        st.error("❌ Failed to initialize grading services. Please try again.")
+        return
+
     questions = assignment.get("questions", [])
     graded_results: List[Dict] = []
 
@@ -240,11 +261,15 @@ def grade_and_save(answers: Dict[int, str], finalize: bool = False):
         if used >= 2:
             continue
         attempt_number = used + 1
-        grade, feedback = ss.quiz_master.grade_question(q, student_answer)
-        graded_results.append({"question_id": qid, "question_number": question_id_to_number[qid], "attempt": attempt_number, "grade": grade, "feedback": feedback})
-        ok = ss.homework_server.record_answer_attempt(submission_id=submission["id"], question_id=qid, attempt_number=attempt_number, student_answer=student_answer, grade=grade, feedback=feedback)
-        if ok:
-            ss.attempts_used[qid] = attempt_number
+        try:
+            grade, feedback = ss.quiz_master.grade_question(q, student_answer)
+            graded_results.append({"question_id": qid, "question_number": question_id_to_number[qid], "attempt": attempt_number, "grade": grade, "feedback": feedback})
+            ok = ss.homework_server.record_answer_attempt(submission_id=submission["id"], question_id=qid, attempt_number=attempt_number, student_answer=student_answer, grade=grade, feedback=feedback)
+            if ok:
+                ss.attempts_used[qid] = attempt_number
+        except Exception as e:
+            st.error(f"❌ Error grading question {question_id_to_number[qid]}: {e}")
+            # Continue with other questions
 
     if graded_results:
         st.success("✅ Answers saved and graded successfully!")
@@ -285,8 +310,13 @@ def grade_and_save(answers: Dict[int, str], finalize: bool = False):
         Format as plain text.
         """
         try:
-            summary = ss.rag_core.prompt_gemini(summary_prompt)
-        except Exception:
+            # Ensure RAG core is available for summary generation
+            if ss.rag_core and ss.rag_core.llm_model:
+                summary = ss.rag_core.prompt_gemini(summary_prompt)
+            else:
+                summary = "Summary unavailable - AI service not initialized."
+        except Exception as e:
+            print(f"Error generating summary: {e}")
             summary = "Summary unavailable."
         
         # Mark submission as completed

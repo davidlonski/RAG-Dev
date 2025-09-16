@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(__file__))
 from pptx_rag_quizzer.file_parser import parse_powerpoint
 from pptx_rag_quizzer.rag_core import RAGCore
 from pptx_rag_quizzer.quiz_master import QuizMaster
-from database.db_psql import ImageServer, HomeworkServer, UserServer
+from database.db_supabase import ImageServer, HomeworkServer, UserServer
 from pptx_rag_quizzer.image_magic import ImageMagic
 
 
@@ -581,11 +581,11 @@ def generate_homework():
                     # When saving a new assignment, store only the assignment ID
                     assignment_id = ss.homework_server.create_assignment(homework_assignment)
                     if assignment_id:
-                        print(f"🔍 assignment created successfully");
+                        print("Assignment created successfully");
                         ss.homework_assignments.append(assignment_id)
                         st.success("✅ Homework assignment saved!")
                     else:
-                        st.error("❌ Failed to create assignment!")
+                        st.error("Failed to create assignment!")
                     ss.homework_preview = None
                     st.rerun()
 
@@ -688,7 +688,13 @@ def view_assignment_results():
     
     # Display each student's submission
     for i, submission in enumerate(submissions):
-        with st.expander(f"👤 {submission['first_name']} {submission['last_name']} ({submission['username']}) - {submission['status'].upper()}"):
+        # Safely get user information with fallbacks
+        first_name = submission.get('first_name', 'Unknown')
+        last_name = submission.get('last_name', 'User')
+        username = submission.get('username', f'user_{submission.get("student_id", "unknown")}')
+        status = submission.get('status', 'unknown')
+        
+        with st.expander(f"👤 {first_name} {last_name} ({username}) - {status.upper()}"):
             
             # Basic submission info
             col1, col2 = st.columns(2)

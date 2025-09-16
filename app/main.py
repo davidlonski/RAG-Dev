@@ -5,7 +5,7 @@ import os
 # Ensure local imports work
 sys.path.append(os.path.dirname(__file__))
 
-from database.db_psql import UserServer
+from database.db_supabase import UserServer
 
 st.set_page_config(
     page_title="RAG Application - Login",
