@@ -4,20 +4,17 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
-from .presentation_model import Presentation, Type
+from models.models import Presentation, Type
 import io
 import time
 from PIL import Image as PILImage
-from database.db_supabase import ImageServer
-from .chroma_http_client import get_chroma_http_client
+from database.database_service import ImageServer
+from database.chroma_http_client import get_chroma_http_client
 
 load_dotenv()
 
 _llm_model_cache = None
 _chroma_service_cache = None
-
-
-# Legacy ChromaDB client function removed - now using HTTP API client only
 
 def get_chroma_http_client_instance(api_url=None):
     """

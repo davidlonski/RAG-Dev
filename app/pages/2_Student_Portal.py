@@ -8,7 +8,7 @@ from datetime import datetime
 # Ensure local imports work
 sys.path.append(os.path.dirname(__file__))
 
-from database.db_supabase import HomeworkServer, UserServer
+from database.database_service import HomeworkServer, UserServer
 from pptx_rag_quizzer.quiz_master import QuizMaster
 from pptx_rag_quizzer.rag_core import RAGCore
 
@@ -452,7 +452,7 @@ def take_assignment():
 if not ss.current_user:
     st.error("❌ Please login first.")
     st.info("Redirecting to login page...")
-    st.switch_page("main.py")
+    st.switch_page("pages/0_Home.py")
     st.stop()
 
 if ss.current_user['role'] != 'student':
@@ -476,6 +476,6 @@ elif ss.page == "take":
 st.markdown("---")
 if st.button("🚪 Logout"):
     ss.current_user = None
-    st.switch_page("main.py")
+    st.switch_page("pages/0_Home.py")
 
 

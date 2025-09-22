@@ -1,6 +1,6 @@
 """
 ChromaDB API Service
-Standalone ChromaDB API service that runs on its own VM.
+Standalone ChromaDB API service that runs on its own process.
 This service handles all ChromaDB operations and exposes a REST API.
 """
 

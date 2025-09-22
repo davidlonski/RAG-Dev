@@ -1,7 +1,7 @@
 import re
 import time
 import base64
-from database.db_supabase import ImageServer
+from database.database_service import ImageServer
 from pptx_rag_quizzer.rag_core import RAGCore
 
 class QuizMaster:

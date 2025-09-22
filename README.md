@@ -1,19 +1,19 @@
 # RAG-Dev: Retrieval-Augmented Generation Quiz Application
 
-A comprehensive RAG (Retrieval-Augmented Generation) application built with Python, using ChromaDB as the vector store, Google's Gemini LLM API for response generation, and Streamlit for the frontend. The application now includes a complete user management system with teacher and student portals, supporting both MySQL and PostgreSQL databases.
+A comprehensive RAG (Retrieval-Augmented Generation) application built with Python, using ChromaDB as the vector store, Google's Gemini LLM API for response generation, and Streamlit for the frontend. The application features a complete user management system with teacher and student portals, powered by Supabase for database operations.
 
 ## 🎯 Features
 
 ### **User Management System**
 - **Multi-User Authentication**: Login/registration system with teacher and student roles
 - **Role-Based Access Control**: Separate portals for different user types
-- **Database Persistence**: User data stored in MySQL or PostgreSQL with proper relationships
+- **Database Persistence**: User data stored in Supabase (managed PostgreSQL) with proper relationships
 - **Session Management**: Secure user state across application sessions
 
 ### **RAG Quizzer System**
 - **PowerPoint Processing**: Upload and process PPTX files with text and image extraction
 - **AI-Powered Question Generation**: Generate text and image-based questions using Gemini LLM
-- **Database Persistence**: RAG quizzer data stored in MySQL or PostgreSQL (no more session state loss)
+- **Database Persistence**: RAG quizzer data stored in Supabase (no more session state loss)
 - **Teacher Isolation**: Each teacher sees only their own presentations and assignments
 
 ### **Homework Management**
@@ -25,15 +25,16 @@ A comprehensive RAG (Retrieval-Augmented Generation) application built with Pyth
 ### **Technical Features**
 - **ChromaDB Integration**: Vector database for document embeddings (HTTP client)
 - **Gemini LLM API**: Advanced question generation and grading
-- **Database Support**: MySQL or PostgreSQL for reliable data persistence
-- **psycopg3/psycopg2**: Modern PostgreSQL driver with improved performance
+- **Supabase Integration**: Managed PostgreSQL database with RESTful API access
+- **Image Storage**: Base64 encoding with automatic hex conversion handling
+- **Connection Resilience**: Retry logic with automatic reconnection for network issues
 - **Streamlit UI**: Modern, responsive web interface
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.8+
-- Database: MySQL or PostgreSQL
+- Supabase Account (for database)
 - ChromaDB Server (HTTP mode)
 - Google Gemini API Key
 
@@ -59,30 +60,10 @@ A comprehensive RAG (Retrieval-Augmented Generation) application built with Pyth
 4. **Configure environment variables**
    Create a `.env` file in the root directory:
    
-   **For MySQL:**
    ```env
-   # MySQL Database Configuration
-   HOMEWORK_DB_HOST=localhost
-   HOMEWORK_DB_USER=your_username
-   HOMEWORK_DB_PASS=your_password
-   HOMEWORK_DB_NAME=your_database
-
-   # ChromaDB Configuration
-   CHROMA_SERVER_HOST=localhost
-   CHROMA_SERVER_HTTP_PORT=8000
-
-   # Google Gemini API
-   GOOGLE_API_KEY=your_gemini_api_key
-   ```
-   
-   **For PostgreSQL:**
-   ```env
-   # PostgreSQL Database Configuration
-   POSTGRES_HOST=localhost
-   POSTGRES_USER=your_username
-   POSTGRES_PASSWORD=your_password
-   POSTGRES_PORT=5432
-   POSTGRES_DB=your_database
+   # Supabase Configuration
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
    # ChromaDB Configuration
    CHROMA_SERVER_HOST=localhost
@@ -97,11 +78,10 @@ A comprehensive RAG (Retrieval-Augmented Generation) application built with Pyth
    chroma run --host localhost --port 8000
    ```
 
-6. **Run database migrations** (if needed)
-   ```bash
-   # For MySQL: Use homework_schema.sql
-   # For PostgreSQL: Use homework_schema_psql.sql
-   ```
+6. **Set up Supabase database**
+   - Create a new project in Supabase
+   - Run the SQL schema from `app/database/homework_schema.sql` in your Supabase SQL editor
+   - Get your project URL and service role key from Supabase settings
 
 7. **Start the application**
    ```bash
@@ -201,10 +181,10 @@ After running migrations, default accounts are created:
 ### **Common Issues**
 
 1. **Database Connection Errors**
-   - Verify MySQL or PostgreSQL server is running
-   - Check database credentials in `.env`
-   - Ensure database exists and schema is created
-   - For PostgreSQL: Ensure psycopg3 is installed
+   - Verify Supabase project is active and accessible
+   - Check Supabase URL and service role key in `.env`
+   - Ensure database schema is created in Supabase
+   - Verify Supabase service role key has proper permissions
 
 2. **ChromaDB Connection Issues**
    - Verify ChromaDB server is running on HTTP mode

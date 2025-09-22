@@ -1,13 +1,13 @@
 import json
 from pptx_rag_quizzer.rag_core import RAGCore
-from database.db_supabase import ImageServer
+from database.database_service import ImageServer
 import streamlit as st
 from typing import List, Dict, Any, Optional
 import hashlib
 import time
 
 
-class ImageMagic:
+class Image:
 
     def __init__(self, rag_core: RAGCore):
         self.rag_core = rag_core
@@ -106,7 +106,6 @@ class ImageMagic:
     def ocr_image(self, image_bytes: bytes):
         """
         Extract text from image using OCR.
-        This is a placeholder - you would implement actual OCR here.
         
         Args:
             image_bytes (bytes): The image data
@@ -114,9 +113,15 @@ class ImageMagic:
         Returns:
             str: Extracted text from the image
         """
-        # Placeholder for OCR implementation
-        # You could use libraries like pytesseract, easyocr, or cloud OCR services
-        return "Sample OCR text from image"
+        try:
+            from .utils import ExtractText_OCR
+            return ExtractText_OCR(image_bytes)
+        except ImportError:
+            print("OCR functionality not available - pytesseract not installed")
+            return "OCR text extraction not available"
+        except Exception as e:
+            print(f"Error during OCR extraction: {e}")
+            return "OCR extraction failed"
 
     def get_enhanced_description(
         self,

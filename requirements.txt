@@ -1,4 +1,30 @@
-# Core RAG and ML dependencies (Python 3.11.2 compatible, CPU-only)
+# RAG-Dev Application Dependencies (App VM Only)
+# This file excludes ChromaDB and heavy ML dependencies
+
+# Google AI and API dependencies
+google-generativeai==0.8.5
+
+# Web framework and server
+streamlit==1.46.1
+
+# File processing
+python-pptx==1.0.2
+pytesseract==0.3.13
+Pillow==11.3.0
+
+# Database and storage (PostgreSQL only)
+supabase==2.18.1
+
+# Utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
+pydantic>=2.0.0,<3.0.0
+
+
+# ChromaDB API Service Dependencies
+
+# Core ChromaDB and ML dependencies
+#chromadb[server]==1.0.15
 chromadb==1.0.15
 sentence-transformers==5.0.0
 transformers==4.53.1
@@ -6,38 +32,14 @@ numpy>=1.24.0,<2.0.0
 pandas>=2.0.0,<2.3.0
 scikit-learn>=1.3.0,<1.7.0
 
-# Google AI and API dependencies
-google-generativeai==0.8.5
-google-ai-generativelanguage==0.6.15
-google-api-core==2.25.1
-google-api-python-client==2.175.0
-google-auth==2.40.3
-
-# Web framework and server
-Flask==3.1.1
-streamlit==1.46.1
-uvicorn==0.35.0
-
-# File processing
-python-pptx==1.0.2
-openpyxl==3.1.5
-pytesseract==0.3.13
-Pillow==11.3.0
-
-# Database and storage
-psycopg[binary]==3.2.10
-chromadb==1.0.15
-supabase==2.18.1
+# FastAPI and web server
+fastapi>=0.100.0
+uvicorn>=0.20.0
+pydantic>=2.0.0,<3.0.0
 
 # Utilities
 python-dotenv>=1.0.0
 requests>=2.31.0
-pydantic>=2.0.0,<3.0.0
-tqdm>=4.65.0
-rich>=13.0.0
-
-# Development and testing
-pytest>=7.0.0
 
 # NOTE: Install CPU-only PyTorch separately:
 # pip install torch==2.7.1+cpu --index-url https://download.pytorch.org/whl/cpu

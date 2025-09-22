@@ -45,3 +45,13 @@ class Presentation(pydantic.BaseModel):
     name: str
     slides: List[Slide]
 
+
+class RAG_quizzer(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
+    
+    id: str
+    name: str
+    presentation: Presentation
+    collection_id: str
+
+

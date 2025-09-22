@@ -6,16 +6,16 @@ from datetime import datetime
 import sys
 import os
 from PIL import Image
-from models import RAG_quizzer
+from models.models import RAG_quizzer
 import uuid
 # Add the current directory to the path to import our modules
 sys.path.append(os.path.dirname(__file__))
 
-from pptx_rag_quizzer.file_parser import parse_powerpoint
+from pptx_rag_quizzer.utils import parse_powerpoint
 from pptx_rag_quizzer.rag_core import RAGCore
 from pptx_rag_quizzer.quiz_master import QuizMaster
-from database.db_supabase import ImageServer, HomeworkServer, UserServer
-from pptx_rag_quizzer.image_magic import ImageMagic
+from database.database_service import ImageServer, HomeworkServer, UserServer
+from pptx_rag_quizzer.image import Image as ImageMagic
 
 
 # Page configuration
@@ -831,7 +831,7 @@ def dashboard():
     
     if st.button("🚪 Logout"):
         ss.current_user = None
-        st.switch_page("main.py")
+        st.switch_page("pages/0_Home.py")
             
 
 
@@ -839,13 +839,13 @@ def dashboard():
 if not ss.current_user:
     st.error("❌ Please login first.")
     st.info("Redirecting to login page...")
-    st.switch_page("main.py")
+    st.switch_page("./pages/0_Home.py")
     st.stop()
 
 if ss.current_user['role'] != 'teacher':
     st.error("❌ Access denied. This page is for teachers only.")
     st.info("Redirecting to login page...")
-    st.switch_page("main.py")
+    st.switch_page("pages/0_Home.py")
     st.stop()
 
 
