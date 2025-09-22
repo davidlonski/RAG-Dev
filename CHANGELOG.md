@@ -1,5 +1,18 @@
 # Changelog
 
+## [2025-09-22] - Student Attempts Increased to 3
+
+### 🎓 Student Portal Update
+- Increased per-question attempt limit from 2 to 3 in `app/pages/2_Student_Portal.py`.
+- Updated gating logic to allow a third attempt; UI now shows "Attempts completed: x/3".
+- Added third-attempt stage and completion messaging.
+
+### 📝 Documentation
+- Updated `CATCHUP.md` Student Workflow to reflect 3 attempts per question.
+
+### 🔧 Notes
+- Per-question max grade remains 2 points; only the attempt cap has changed.
+
 ## [2025-01-27] - Supabase API Integration & Critical Bug Fixes
 
 ### 🚀 Major Database Architecture Change

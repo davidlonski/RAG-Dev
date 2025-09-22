@@ -258,7 +258,7 @@ def grade_and_save(answers: Dict[int, str], finalize: bool = False):
         if not student_answer:
             continue
         used = ss.attempts_used.get(qid, 0)
-        if used >= 2:
+        if used >= 3:
             continue
         attempt_number = used + 1
         try:
@@ -366,6 +366,11 @@ def take_assignment():
                                      if len(answers_by_q.get(q["id"], [])) >= 2)
     second_attempt_complete = questions_with_two_attempts == total_questions and total_questions > 0
 
+    # Check if third attempt is complete (all questions have 3 attempts)
+    questions_with_three_attempts = sum(1 for q in assignment.get("questions", [])
+                                        if len(answers_by_q.get(q["id"], [])) >= 3)
+    third_attempt_complete = questions_with_three_attempts == total_questions and total_questions > 0
+
     # Show questions
     for question_index, q in enumerate(assignment.get("questions", []), 1):
         qid = q["id"]
@@ -388,7 +393,7 @@ def take_assignment():
         
         # Show attempt history
         if attempts:
-            st.markdown(f"**Attempts completed: {used}/2**")
+            st.markdown(f"**Attempts completed: {used}/3**")
             for i, attempt in enumerate(attempts, 1):
                 with st.expander(f"Attempt {i} - Grade: {attempt['grade']}/2"):
                     st.write(f"**Your answer:** {attempt['student_answer']}")
@@ -396,7 +401,7 @@ def take_assignment():
                         st.info(f"**Feedback:** {attempt['feedback']}")
         
         # Determine if student can answer this question
-        can_answer = used < 2
+        can_answer = used < 3
         
         if can_answer:
             # Pre-fill with last attempt if available
@@ -426,23 +431,32 @@ def take_assignment():
     elif first_attempt_complete and not second_attempt_complete:
         # First attempt complete, ready for second attempt
         st.success("🎉 First attempt completed! You can now make your second attempt.")
-        col1, col2, col3 = st.columns([1, 1, 1])
+        col1, col2 = st.columns([1, 1])
         with col1:
             if st.button("💾 Save & Grade Second Attempt", type="primary"):
                 grade_and_save(ss.answers_draft, finalize=False)
                 st.rerun()
         with col2:
-            if st.button("✅ Submit Final Assignment"):
-                grade_and_save(ss.answers_draft, finalize=True)
-                st.rerun()
-        with col3:
             if st.button("← Back to Assignments", key="student_back3"):
                 ss.page = "assignments"
                 st.rerun()
-    
-    elif second_attempt_complete:
-        # Both attempts complete, mark as finished
-        st.success("🎉 Assignment completed! Both attempts have been submitted.")
+
+    elif second_attempt_complete and not third_attempt_complete:
+        # Second attempt complete, ready for third attempt
+        st.success("🎉 Second attempt completed! You can now make your third attempt.")
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("💾 Save & Grade Third Attempt", type="primary"):
+                grade_and_save(ss.answers_draft, finalize=False)
+                st.rerun()
+        with col2:
+            if st.button("← Back to Assignments", key="student_back4"):
+                ss.page = "assignments"
+                st.rerun()
+
+    elif third_attempt_complete:
+        # All three attempts complete, mark as finished
+        st.success("🎉 Assignment completed! All three attempts have been submitted.")
         if st.button("✅ Submit Final Assignment"):
             grade_and_save(ss.answers_draft, finalize=True)
             st.rerun()
