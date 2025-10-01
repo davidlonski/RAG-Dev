@@ -72,11 +72,14 @@ class RAGCore:
             chroma_api_url: ChromaDB API service URL (for production environments)
         """
         self.llm_model = get_llm_model()
-        self.chroma_api_url = chroma_api_url
-        
+        # Resolve Chroma API URL from parameter or environment (fallback to localhost)
+        load_dotenv()
+        resolved_chroma_api_url = chroma_api_url or os.getenv("CHROMA_API_URL", "http://localhost:8001")
+        self.chroma_api_url = resolved_chroma_api_url
+
         # Always use HTTP API client (no ChromaDB dependencies)
-        self.chroma_api = get_chroma_http_client_instance(api_url=chroma_api_url)
-        print("✅ RAGCore initialized with ChromaDB HTTP client (no heavy dependencies)")
+        self.chroma_api = get_chroma_http_client_instance(api_url=resolved_chroma_api_url)
+        print(f"✅ RAGCore initialized with ChromaDB HTTP client: {self.chroma_api_url}")
 
     def create_collection(self, data: Presentation):
         """
