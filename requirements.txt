@@ -42,5 +42,5 @@ python-dotenv>=1.0.0
 requests>=2.31.0
 
 # NOTE: Install CPU-only PyTorch separately:
-# pip install torch==2.7.1+cpu --index-url https://download.pytorch.org/whl/cpu
+# pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple/
 # Then install other dependencies: pip install -r requirements.txt
